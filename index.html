@@ -715,7 +715,12 @@ function getFilteredDirectors(code){
 }
 
 // Genre/movement filtering is not available in live mode (would require all data loaded)
-function isDimmed(code){ return false; }
+function isDimmed(code){
+  if(activeGenre.size===0||viewMode!=='films') return false;
+  const genres=COUNTRY_STATS[code]?.genres||{};
+  // Country is dimmed if it has zero sample films for ALL active genres
+  return ![...activeGenre].some(g=>(genres[g]||0)>0);
+}
 
 // ═══════════════════════════════════════════════════════
 // MOSAIC LAYOUT ENGINE
@@ -1530,10 +1535,21 @@ function showCategoryModal(key){
   } else {
     def=GENRE_DEFS[key]; if(!def) return;
     const items=LOADED_FILMS.filter(f=>f.genre===key).sort((a,b)=>(b.year||0)-(a.year||0));
-    count=items.length; countLabel='film caricati in questo genere';
+    const estimatedTotal=Object.values(COUNTRY_STATS).reduce((sum,s)=>{
+      const gv=s.genres?.[key]||0;
+      if(!gv) return sum;
+      const sampled=Object.values(s.genres||{}).reduce((a,b)=>a+b,0)||1;
+      return sum+Math.round((s.films||0)*gv/sampled);
+    },0);
+    count=items.length;
+    countLabel=estimatedTotal>0
+      ? `film caricati · ~${estimatedTotal.toLocaleString('it-IT')} stimati nel DB`
+      : 'film caricati in questo genere';
     titleColor='var(--gold)';
     examplesText='';
-    listLabel=count>0?`${count} FILM IN QUESTO GENERE (NAZIONI VISITATE)`:'NESSUN FILM CARICATO — CLICCA UNA NAZIONE PER INIZIARE';
+    listLabel=count>0
+      ? `${count} FILM CARICATI IN QUESTO GENERE`
+      : 'ESPLORA LE NAZIONI PER CARICARE I FILM DI QUESTO GENERE';
     listItems=items.map(f=>`<div class="gm-row gm-row-film">
       <span class="gm-year">${f.year||'—'}</span>
       <span class="gm-name">${f.title}${f.itTitle?` <span class="gm-it-title">(${f.itTitle})</span>`:''}</span>
@@ -1573,15 +1589,21 @@ function renderLeftPanel(){
   const gl=document.getElementById('genre-list');
   gl.innerHTML='';
   Object.entries(defs).forEach(([key,def])=>{
-    // Counts reflect locally loaded data (grow as countries are visited)
+    // For films: estimate per-genre total from COUNTRY_STATS sample (0 extra API calls)
+    // For directors/actors: no movement/type field from TMDB — show total loaded
     const count=isDirectors
-      ? LOADED_DIRECTORS.length   // no movement field from TMDB — show total loaded
+      ? LOADED_DIRECTORS.length
       : isActors
         ? LOADED_ACTORS.length
-        : LOADED_FILMS.filter(f=>f.genre===key).length;
+        : Object.values(COUNTRY_STATS).reduce((sum,s)=>{
+            const gv=s.genres?.[key]||0;
+            if(!gv) return sum;
+            const sampled=Object.values(s.genres||{}).reduce((a,b)=>a+b,0)||1;
+            return sum+Math.round((s.films||0)*gv/sampled);
+          },0);
     const item=document.createElement('div');
     item.className='legend-item';
-    item.innerHTML=`<div class="legend-text">${key}</div><div class="legend-count">${count||'—'}</div>`;
+    item.innerHTML=`<div class="legend-text">${key}</div><div class="legend-count">${count>0?count.toLocaleString('it-IT'):'—'}</div>`;
     item.onclick=()=>showCategoryModal(key);
     gl.appendChild(item);
   });
@@ -1621,8 +1643,19 @@ function renderRightPanel(){
   cl.innerHTML='';
   document.getElementById('rp-title').textContent='Nazioni';
 
+  // When genre filter active for films, estimate per-genre country counts
+  const hasGenreFilter=activeGenre.size>0&&viewMode==='films';
+  function _genreCount(code){
+    return [...activeGenre].reduce((sum,g)=>{
+      const s=COUNTRY_STATS[code]||{};
+      const gv=s.genres?.[g]||0;
+      const sampled=Object.values(s.genres||{}).reduce((a,b)=>a+b,0)||1;
+      return sum+Math.round((s.films||0)*gv/sampled);
+    },0);
+  }
+
   const sorted=Object.entries(COUNTRIES).map(([code,c])=>{
-    const count=getCountryCount(code);
+    const count=hasGenreFilter?_genreCount(code):getCountryCount(code);
     return {code,c,count};
   }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
 
@@ -1633,7 +1666,7 @@ function renderRightPanel(){
     item.className='legend-item';
     item.dataset.code=code;
     const pct=Math.round(count/maxC*100);
-    item.innerHTML=`<div class="legend-text">${c.name}</div><div class="legend-count">${count}</div><div class="nation-bar"><div class="nation-fill" style="width:${pct}%"></div></div>`;
+    item.innerHTML=`<div class="legend-text">${c.name}</div><div class="legend-count">${count.toLocaleString('it-IT')}</div><div class="nation-bar"><div class="nation-fill" style="width:${pct}%"></div></div>`;
     item.style.flexWrap='wrap';
     item.onclick=()=>selectCountry(code);
     item.onmouseenter=()=>{hoveredCode=code;};

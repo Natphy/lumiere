@@ -8,7 +8,7 @@
  *
  * Response: { FR: { films, directors, actors }, US: { … }, … }
  */
-const { tmdb, LUMIERE_COUNTRIES } = require('./_tmdb');
+const { tmdb, GENRE_MAP, LUMIERE_COUNTRIES } = require('./_tmdb');
 
 // Fetch total film count for one country (only page 1, read total_results).
 async function countryStats(code) {
@@ -20,6 +20,14 @@ async function countryStats(code) {
       page: 1
     });
     const films = data.total_results || 0;
+    // Count genre distribution from the top-voted sample returned by discover (≤20 films)
+    const genres = {};
+    (data.results || []).forEach(film => {
+      (film.genre_ids || []).forEach(id => {
+        const label = GENRE_MAP[id];
+        if (label) genres[label] = (genres[label] || 0) + 1;
+      });
+    });
     // Directors ≈ 40 % of film count (rough proxy — one director per film,
     // but top directors are counted once).
     // Actors ≈ 3× film count (rough proxy).
@@ -27,10 +35,11 @@ async function countryStats(code) {
       code,
       films,
       directors: Math.max(1, Math.round(films * 0.4)),
-      actors:    Math.max(1, Math.min(Math.round(films * 3), 9999))
+      actors:    Math.max(1, Math.min(Math.round(films * 3), 9999)),
+      genres     // e.g. { Drammatico: 9, Thriller: 4, Azione: 2, … }
     };
   } catch {
-    return { code, films: 0, directors: 0, actors: 0 };
+    return { code, films: 0, directors: 0, actors: 0, genres: {} };
   }
 }
 
@@ -50,8 +59,8 @@ module.exports = async function handler(req, res) {
     }
 
     const stats = {};
-    results.forEach(({ code, films, directors, actors }) => {
-      stats[code] = { films, directors, actors };
+    results.forEach(({ code, films, directors, actors, genres }) => {
+      stats[code] = { films, directors, actors, genres };
     });
 
     res.status(200).json(stats);
