@@ -384,37 +384,84 @@ const GENRE_DEFS = {
 };
 
 const COUNTRIES = {
-  'FR': { name:'Francia',         flag:'🇫🇷', continent:'europe',   lon:2,    lat:46,   rgb:'0,229,255' },
-  'US': { name:'Stati Uniti',     flag:'🇺🇸', continent:'americas', lon:-98,  lat:38,   rgb:'255,204,0' },
-  'IT': { name:'Italia',          flag:'🇮🇹', continent:'europe',   lon:12,   lat:42,   rgb:'0,229,255' },
-  'GB': { name:'Regno Unito',     flag:'🇬🇧', continent:'europe',   lon:-2,   lat:54,   rgb:'0,229,255' },
-  'DE': { name:'Germania',        flag:'🇩🇪', continent:'europe',   lon:10,   lat:51,   rgb:'0,229,255' },
-  'JP': { name:'Giappone',        flag:'🇯🇵', continent:'asia',     lon:138,  lat:36,   rgb:'204,51,255' },
-  'SE': { name:'Svezia',          flag:'🇸🇪', continent:'europe',   lon:18,   lat:60,   rgb:'0,229,255' },
-  'RU': { name:'Russia/URSS',     flag:'🇷🇺', continent:'europe',   lon:60,   lat:60,   rgb:'0,229,255' },
-  'IN': { name:'India',           flag:'🇮🇳', continent:'asia',     lon:79,   lat:20,   rgb:'204,51,255' },
-  'KR': { name:'Corea del Sud',   flag:'🇰🇷', continent:'asia',     lon:128,  lat:37,   rgb:'204,51,255' },
-  'ES': { name:'Spagna',          flag:'🇪🇸', continent:'europe',   lon:-4,   lat:40,   rgb:'0,229,255' },
-  'PL': { name:'Polonia',         flag:'🇵🇱', continent:'europe',   lon:20,   lat:52,   rgb:'0,229,255' },
-  'DK': { name:'Danimarca',       flag:'🇩🇰', continent:'europe',   lon:10,   lat:56,   rgb:'0,229,255' },
-  'AT': { name:'Austria',         flag:'🇦🇹', continent:'europe',   lon:14,   lat:47,   rgb:'0,229,255' },
-  'BR': { name:'Brasile',         flag:'🇧🇷', continent:'americas', lon:-51,  lat:-14,  rgb:'255,204,0' },
-  'MX': { name:'Messico',         flag:'🇲🇽', continent:'americas', lon:-102, lat:23,   rgb:'255,204,0' },
-  'CN': { name:'Cina',            flag:'🇨🇳', continent:'asia',     lon:104,  lat:35,   rgb:'204,51,255' },
-  'AR': { name:'Argentina',       flag:'🇦🇷', continent:'americas', lon:-64,  lat:-34,  rgb:'255,204,0' },
-  'AU': { name:'Australia',       flag:'🇦🇺', continent:'oceania',  lon:133,  lat:-27,  rgb:'0,187,170' },
-  'BE': { name:'Belgio',          flag:'🇧🇪', continent:'europe',   lon:4,    lat:51,   rgb:'0,229,255' },
-  'IR': { name:'Iran',            flag:'🇮🇷', continent:'asia',     lon:53,   lat:33,   rgb:'204,51,255' },
-  'NO': { name:'Norvegia',        flag:'🇳🇴', continent:'europe',   lon:10,   lat:62,   rgb:'0,229,255' },
-  'HU': { name:'Ungheria',        flag:'🇭🇺', continent:'europe',   lon:19,   lat:47,   rgb:'0,229,255' },
-  'NZ': { name:'Nuova Zelanda',   flag:'🇳🇿', continent:'oceania',  lon:172,  lat:-41,  rgb:'0,187,170' },
-  'IE': { name:'Irlanda',         flag:'🇮🇪', continent:'europe',   lon:-8,   lat:53,   rgb:'0,229,255' },
-  'TW': { name:'Taiwan',          flag:'🇹🇼', continent:'asia',     lon:121,  lat:24,   rgb:'204,51,255' },
-  'CZ': { name:'Rep. Ceca',       flag:'🇨🇿', continent:'europe',   lon:15,   lat:50,   rgb:'0,229,255' },
-  'CA': { name:'Canada',          flag:'🇨🇦', continent:'americas', lon:-96,  lat:60,   rgb:'255,204,0' },
-  'PT': { name:'Portogallo',      flag:'🇵🇹', continent:'europe',   lon:-8,   lat:39,   rgb:'0,229,255' },
-  'RO': { name:'Romania',         flag:'🇷🇴', continent:'europe',   lon:25,   lat:45,   rgb:'0,229,255' },
-  'HK': { name:'Hong Kong',       flag:'🇭🇰', continent:'asia',     lon:114,  lat:22,   rgb:'204,51,255' }
+  // ── Europa (31) ─────────────────────────────────────────
+  'FR': { name:'Francia',          flag:'🇫🇷', continent:'europe',   lon:2,    lat:46,   rgb:'0,229,255' },
+  'GB': { name:'Regno Unito',      flag:'🇬🇧', continent:'europe',   lon:-2,   lat:54,   rgb:'0,229,255' },
+  'DE': { name:'Germania',         flag:'🇩🇪', continent:'europe',   lon:10,   lat:51,   rgb:'0,229,255' },
+  'IT': { name:'Italia',           flag:'🇮🇹', continent:'europe',   lon:12,   lat:42,   rgb:'0,229,255' },
+  'ES': { name:'Spagna',           flag:'🇪🇸', continent:'europe',   lon:-4,   lat:40,   rgb:'0,229,255' },
+  'PT': { name:'Portogallo',       flag:'🇵🇹', continent:'europe',   lon:-8,   lat:39,   rgb:'0,229,255' },
+  'BE': { name:'Belgio',           flag:'🇧🇪', continent:'europe',   lon:4,    lat:51,   rgb:'0,229,255' },
+  'NL': { name:'Paesi Bassi',      flag:'🇳🇱', continent:'europe',   lon:5,    lat:52,   rgb:'0,229,255' },
+  'CH': { name:'Svizzera',         flag:'🇨🇭', continent:'europe',   lon:8,    lat:47,   rgb:'0,229,255' },
+  'AT': { name:'Austria',          flag:'🇦🇹', continent:'europe',   lon:14,   lat:47,   rgb:'0,229,255' },
+  'SE': { name:'Svezia',           flag:'🇸🇪', continent:'europe',   lon:18,   lat:60,   rgb:'0,229,255' },
+  'NO': { name:'Norvegia',         flag:'🇳🇴', continent:'europe',   lon:10,   lat:62,   rgb:'0,229,255' },
+  'DK': { name:'Danimarca',        flag:'🇩🇰', continent:'europe',   lon:10,   lat:56,   rgb:'0,229,255' },
+  'FI': { name:'Finlandia',        flag:'🇫🇮', continent:'europe',   lon:26,   lat:65,   rgb:'0,229,255' },
+  'PL': { name:'Polonia',          flag:'🇵🇱', continent:'europe',   lon:20,   lat:52,   rgb:'0,229,255' },
+  'CZ': { name:'Rep. Ceca',        flag:'🇨🇿', continent:'europe',   lon:15,   lat:50,   rgb:'0,229,255' },
+  'SK': { name:'Slovacchia',       flag:'🇸🇰', continent:'europe',   lon:19,   lat:49,   rgb:'0,229,255' },
+  'HU': { name:'Ungheria',         flag:'🇭🇺', continent:'europe',   lon:19,   lat:47,   rgb:'0,229,255' },
+  'RO': { name:'Romania',          flag:'🇷🇴', continent:'europe',   lon:25,   lat:45,   rgb:'0,229,255' },
+  'BG': { name:'Bulgaria',         flag:'🇧🇬', continent:'europe',   lon:25,   lat:43,   rgb:'0,229,255' },
+  'GR': { name:'Grecia',           flag:'🇬🇷', continent:'europe',   lon:22,   lat:39,   rgb:'0,229,255' },
+  'RS': { name:'Serbia',           flag:'🇷🇸', continent:'europe',   lon:21,   lat:44,   rgb:'0,229,255' },
+  'HR': { name:'Croazia',          flag:'🇭🇷', continent:'europe',   lon:16,   lat:45,   rgb:'0,229,255' },
+  'TR': { name:'Turchia',          flag:'🇹🇷', continent:'europe',   lon:35,   lat:39,   rgb:'0,229,255' },
+  'RU': { name:'Russia/URSS',      flag:'🇷🇺', continent:'europe',   lon:60,   lat:60,   rgb:'0,229,255' },
+  'UA': { name:'Ucraina',          flag:'🇺🇦', continent:'europe',   lon:31,   lat:49,   rgb:'0,229,255' },
+  'IE': { name:'Irlanda',          flag:'🇮🇪', continent:'europe',   lon:-8,   lat:53,   rgb:'0,229,255' },
+  'IS': { name:'Islanda',          flag:'🇮🇸', continent:'europe',   lon:-19,  lat:65,   rgb:'0,229,255' },
+  'GE': { name:'Georgia',          flag:'🇬🇪', continent:'europe',   lon:44,   lat:42,   rgb:'0,229,255' },
+  'LT': { name:'Lituania',         flag:'🇱🇹', continent:'europe',   lon:24,   lat:56,   rgb:'0,229,255' },
+  'AL': { name:'Albania',          flag:'🇦🇱', continent:'europe',   lon:20,   lat:41,   rgb:'0,229,255' },
+  // ── Americhe (12) ───────────────────────────────────────
+  'US': { name:'Stati Uniti',      flag:'🇺🇸', continent:'americas', lon:-98,  lat:38,   rgb:'255,204,0' },
+  'CA': { name:'Canada',           flag:'🇨🇦', continent:'americas', lon:-96,  lat:60,   rgb:'255,204,0' },
+  'MX': { name:'Messico',          flag:'🇲🇽', continent:'americas', lon:-102, lat:23,   rgb:'255,204,0' },
+  'BR': { name:'Brasile',          flag:'🇧🇷', continent:'americas', lon:-51,  lat:-14,  rgb:'255,204,0' },
+  'AR': { name:'Argentina',        flag:'🇦🇷', continent:'americas', lon:-64,  lat:-34,  rgb:'255,204,0' },
+  'CL': { name:'Cile',             flag:'🇨🇱', continent:'americas', lon:-71,  lat:-35,  rgb:'255,204,0' },
+  'CO': { name:'Colombia',         flag:'🇨🇴', continent:'americas', lon:-74,  lat:4,    rgb:'255,204,0' },
+  'PE': { name:'Perù',             flag:'🇵🇪', continent:'americas', lon:-76,  lat:-10,  rgb:'255,204,0' },
+  'VE': { name:'Venezuela',        flag:'🇻🇪', continent:'americas', lon:-67,  lat:8,    rgb:'255,204,0' },
+  'UY': { name:'Uruguay',          flag:'🇺🇾', continent:'americas', lon:-56,  lat:-33,  rgb:'255,204,0' },
+  'CU': { name:'Cuba',             flag:'🇨🇺', continent:'americas', lon:-80,  lat:22,   rgb:'255,204,0' },
+  'BO': { name:'Bolivia',          flag:'🇧🇴', continent:'americas', lon:-65,  lat:-17,  rgb:'255,204,0' },
+  // ── Asia (19) ───────────────────────────────────────────
+  'JP': { name:'Giappone',         flag:'🇯🇵', continent:'asia',     lon:138,  lat:36,   rgb:'204,51,255' },
+  'KR': { name:'Corea del Sud',    flag:'🇰🇷', continent:'asia',     lon:128,  lat:37,   rgb:'204,51,255' },
+  'CN': { name:'Cina',             flag:'🇨🇳', continent:'asia',     lon:104,  lat:35,   rgb:'204,51,255' },
+  'HK': { name:'Hong Kong',        flag:'🇭🇰', continent:'asia',     lon:114,  lat:22,   rgb:'204,51,255' },
+  'TW': { name:'Taiwan',           flag:'🇹🇼', continent:'asia',     lon:121,  lat:24,   rgb:'204,51,255' },
+  'IN': { name:'India',            flag:'🇮🇳', continent:'asia',     lon:79,   lat:20,   rgb:'204,51,255' },
+  'TH': { name:'Tailandia',        flag:'🇹🇭', continent:'asia',     lon:101,  lat:15,   rgb:'204,51,255' },
+  'ID': { name:'Indonesia',        flag:'🇮🇩', continent:'asia',     lon:107,  lat:-7,   rgb:'204,51,255' },
+  'MY': { name:'Malaysia',         flag:'🇲🇾', continent:'asia',     lon:110,  lat:4,    rgb:'204,51,255' },
+  'PH': { name:'Filippine',        flag:'🇵🇭', continent:'asia',     lon:122,  lat:12,   rgb:'204,51,255' },
+  'VN': { name:'Vietnam',          flag:'🇻🇳', continent:'asia',     lon:108,  lat:14,   rgb:'204,51,255' },
+  'SG': { name:'Singapore',        flag:'🇸🇬', continent:'asia',     lon:104,  lat:1,    rgb:'204,51,255' },
+  'PK': { name:'Pakistan',         flag:'🇵🇰', continent:'asia',     lon:69,   lat:30,   rgb:'204,51,255' },
+  'BD': { name:'Bangladesh',       flag:'🇧🇩', continent:'asia',     lon:90,   lat:24,   rgb:'204,51,255' },
+  'IR': { name:'Iran',             flag:'🇮🇷', continent:'asia',     lon:53,   lat:33,   rgb:'204,51,255' },
+  'IL': { name:'Israele',          flag:'🇮🇱', continent:'asia',     lon:35,   lat:31,   rgb:'204,51,255' },
+  'LB': { name:'Libano',           flag:'🇱🇧', continent:'asia',     lon:36,   lat:34,   rgb:'204,51,255' },
+  'KZ': { name:'Kazakhstan',       flag:'🇰🇿', continent:'asia',     lon:67,   lat:47,   rgb:'204,51,255' },
+  'MN': { name:'Mongolia',         flag:'🇲🇳', continent:'asia',     lon:103,  lat:47,   rgb:'204,51,255' },
+  // ── Africa (9) ──────────────────────────────────────────
+  'EG': { name:'Egitto',           flag:'🇪🇬', continent:'africa',   lon:30,   lat:27,   rgb:'255,140,50' },
+  'MA': { name:'Marocco',          flag:'🇲🇦', continent:'africa',   lon:-6,   lat:32,   rgb:'255,140,50' },
+  'TN': { name:'Tunisia',          flag:'🇹🇳', continent:'africa',   lon:9,    lat:34,   rgb:'255,140,50' },
+  'DZ': { name:'Algeria',          flag:'🇩🇿', continent:'africa',   lon:3,    lat:28,   rgb:'255,140,50' },
+  'NG': { name:'Nigeria',          flag:'🇳🇬', continent:'africa',   lon:8,    lat:10,   rgb:'255,140,50' },
+  'GH': { name:'Ghana',            flag:'🇬🇭', continent:'africa',   lon:-2,   lat:8,    rgb:'255,140,50' },
+  'ZA': { name:'Sud Africa',       flag:'🇿🇦', continent:'africa',   lon:25,   lat:-29,  rgb:'255,140,50' },
+  'SN': { name:'Senegal',          flag:'🇸🇳', continent:'africa',   lon:-14,  lat:14,   rgb:'255,140,50' },
+  'CM': { name:'Camerun',          flag:'🇨🇲', continent:'africa',   lon:12,   lat:6,    rgb:'255,140,50' },
+  // ── Oceania (2) ─────────────────────────────────────────
+  'AU': { name:'Australia',        flag:'🇦🇺', continent:'oceania',  lon:133,  lat:-27,  rgb:'0,187,170' },
+  'NZ': { name:'Nuova Zelanda',    flag:'🇳🇿', continent:'oceania',  lon:172,  lat:-41,  rgb:'0,187,170' }
 };
 
 
@@ -672,7 +719,7 @@ function fitView(){
   const visH = canvas.height - padT - padB;
   if(visW <= 0 || visH <= 0) return;
 
-  const codes = Object.keys(COUNTRIES);
+  const codes = Object.keys(COUNTRY_STATS).filter(c => COUNTRIES[c]);
   const wxs = codes.map(c => COUNTRIES[c]._nx * canvas.width);
   const wys = codes.map(c => COUNTRIES[c]._ny * canvas.height);
   const minX = Math.min(...wxs), maxX = Math.max(...wxs);
@@ -721,14 +768,16 @@ function isDimmed(code){ return false; }
 // ═══════════════════════════════════════════════════════
 // MOSAIC LAYOUT ENGINE
 // ═══════════════════════════════════════════════════════
-// Longitude band boundaries (west → east) — 6 geographic columns
+// Longitude band boundaries (west → east) — 6 geographic columns.
+// The exact countries in each band are dynamic: only those present in
+// COUNTRY_STATS (returned by /api/stats) AND defined in COUNTRIES are shown.
 const MOSAIC_BANDS=[
-  {minLon:-180,maxLon:-25},   // Americas      : CA US MX AR BR        (5)
-  {minLon: -25,maxLon:  8},   // Europe-West   : IE GB PT ES FR BE      (6)
-  {minLon:   8,maxLon: 17},   // Europe-Central: NO DK DE IT AT CZ      (6)
-  {minLon:  17,maxLon: 42},   // Europe-East   : SE HU PL RO            (4)
-  {minLon:  42,maxLon: 90},   // Asia-West     : IR RU IN               (3)
-  {minLon:  90,maxLon:180},   // Asia-East     : CN HK TW KR JP AU NZ   (7)
+  {minLon:-180,maxLon:-25},   // Americas      : CA US MX AR BR CL CO PE VE UY CU BO …
+  {minLon: -25,maxLon:  8},   // Europe-West   : IS IE GB PT ES FR BE NL …
+  {minLon:   8,maxLon: 17},   // Europe-Central: NO DK DE CH IT AT CZ HR …
+  {minLon:  17,maxLon: 42},   // Europe-East   : SE FI SK HU PL RO BG GR RS TR UA LT AL IL LB …
+  {minLon:  42,maxLon: 90},   // Asia-West     : GE RU IR PK IN BD KZ …
+  {minLon:  90,maxLon:180},   // Asia-East     : MN CN SG MY ID TH VN HK TW PH KR JP AU NZ …
 ];
 const MOSAIC_GAP=2;           // px gap between tiles
 let mosaicLayout={};          // { code: {x,y,w,h} } — base layout
@@ -737,11 +786,12 @@ let liveMosaicLayout={};      // frame-by-frame layout with hover distortion
 function buildMosaicLayout(){
   const cW=canvas.width, cH=canvas.height;
 
-  // Assign countries to bands, sort N→S within each band
+  // Assign countries to bands, sort N→S within each band.
+  // Only include countries present in COUNTRY_STATS (dynamic API results) AND
+  // defined in COUNTRIES (so we have geographic metadata for placement).
   const bands=MOSAIC_BANDS.map(b=>({
     ...b,
-    countries:Object.keys(COUNTRIES)
-      .filter(c=>COUNTRIES[c].lon>=b.minLon&&COUNTRIES[c].lon<b.maxLon)
+    countries:Object.keys(COUNTRY_STATS).filter(c=>COUNTRIES[c]&&COUNTRIES[c].lon>=b.minLon&&COUNTRIES[c].lon<b.maxLon)
       .sort((a,z)=>COUNTRIES[z].lat-COUNTRIES[a].lat)
   })).filter(b=>b.countries.length>0);
 
@@ -781,9 +831,10 @@ function buildMosaicLayout(){
   });
   mosaicLayout=layout;
 
-  // Track which country has the most content (gets gold tile)
+  // Track which country has the most content (gets gold tile).
+  // Iterate only over countries present in COUNTRY_STATS to match what's rendered.
   let topN=0; maxCountCode=null;
-  Object.keys(COUNTRIES).forEach(code=>{
+  Object.keys(COUNTRY_STATS).filter(c=>COUNTRIES[c]).forEach(code=>{
     const n=getCountryCount(code);
     if(n>topN){topN=n;maxCountCode=code;}
   });

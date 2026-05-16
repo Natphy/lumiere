@@ -1,5 +1,10 @@
 {
   "version": 2,
+  "functions": {
+    "api/stats.js": {
+      "maxDuration": 60
+    }
+  },
   "headers": [
     {
       "source": "/api/(.*)",
