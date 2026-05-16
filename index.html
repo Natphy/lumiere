@@ -235,6 +235,15 @@
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:var(--surface)} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px} ::-webkit-scrollbar-thumb:hover{background:rgba(255,215,0,0.35)}
     .sources-desc { font-family:var(--ff-title); font-size:1.5rem; color:var(--text); line-height:1.5; }
 
+    /* ── TOOLTIP CONTROLS BAR ── */
+    .tt-controls { display:flex; gap:8px; align-items:center; padding:9px 16px; border-bottom:1px solid rgba(255,215,0,0.1); flex-shrink:0; background:rgba(0,0,0,0.18); flex-wrap:wrap; }
+    .tt-ctrl-btn { background:transparent; border:1px solid rgba(255,215,0,0.32); color:var(--gold); font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.12em; padding:5px 13px; border-radius:3px; cursor:pointer; transition:background 0.15s,border-color 0.15s; white-space:nowrap; flex-shrink:0; }
+    .tt-ctrl-btn:hover { background:rgba(255,215,0,0.09); border-color:rgba(255,215,0,0.55); }
+    .tt-ctrl-select { background:#07090f; border:1px solid rgba(255,215,0,0.32); color:var(--text-mid); font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.06em; padding:5px 8px; border-radius:3px; cursor:pointer; flex:1; min-width:110px; }
+    .tt-ctrl-select:focus { outline:none; border-color:rgba(255,215,0,0.6); }
+    .tt-ctrl-label { font-family:var(--ff-mono); font-size:0.62rem; color:var(--text-dim); letter-spacing:0.14em; white-space:nowrap; }
+    @media(max-width:767px){ .tt-controls{padding:7px 12px;gap:6px} .tt-ctrl-btn{font-size:0.62rem;padding:4px 10px} .tt-ctrl-select{font-size:0.62rem} }
+
     /* ── API SPINNER ── */
     #api-spinner { position:fixed; top:72px; left:50%; transform:translateX(-50%); z-index:500; display:flex; align-items:center; gap:8px; background:rgba(7,9,15,0.92); border:1px solid rgba(255,215,0,0.3); border-radius:20px; padding:6px 14px 6px 10px; font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.14em; color:var(--gold); pointer-events:none; }
     .spinner-ring { width:14px; height:14px; border:2px solid rgba(255,215,0,0.2); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; }
@@ -496,7 +505,7 @@ function _applyStats() {
 
 // ── Pagination state for the open tooltip ─────────────────
 // Tracks which page was last loaded so "Carica altri" knows where to continue.
-const _tooltipPagination = {};   // key: `${mode}_${code}` → { page, totalPages, totalResults }
+// _tooltipPagination removed — replaced by _ttState below
 
 // ── Per-country data fetch — called on tile click or "load more" ──
 // Returns { data:[], totalPages, totalResults }
@@ -1202,74 +1211,134 @@ async function selectCountry(code){
   await buildPinnedTooltip(code);
 }
 
-// ── SVG icons (shared by buildPinnedTooltip & appendTooltipCards) ──
+// ══════════════════════════════════════════════════════════
+// TOOLTIP — SORT, FILTER & PAGINATION ENGINE
+// ══════════════════════════════════════════════════════════
+
+// Centralised state for the currently-open tooltip.
+// key: `${mode}_${code}`
+const _ttState = {};
+/*  Shape:
+    { code, mode, sortDir:'desc'|'asc', yearFilter:null|number,
+      allItems:[], page:1, totalPages:1, totalResults:0 }  */
+
+// ── SVG icons ──
 const _svgExtLink=`<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7"/><path d="M8 1h3v3M11 1 6 6"/></svg>`;
 const _svgPlay=`<svg viewBox="0 0 12 12" fill="currentColor"><polygon points="2,1 11,6 2,11"/></svg>`;
 
+// ── Link helpers ──
 function _wikiLinkFilm(f){
-  const q=encodeURIComponent(f.title+' '+f.year);
-  const url=f.url||`https://en.wikipedia.org/w/index.php?search=${q}&ns0=1`;
-  return `<a class="card-source-link" href="${url}" target="_blank" rel="noopener noreferrer">${_svgExtLink}Wikipedia</a>`;
+  const q=encodeURIComponent(f.title+' '+(f.year||''));
+  return `<a class="card-source-link" href="${f.url||`https://en.wikipedia.org/w/index.php?search=${q}&ns0=1`}" target="_blank" rel="noopener noreferrer">${_svgExtLink}Wikipedia</a>`;
 }
 function _wikiLinkPerson(p){
   const q=encodeURIComponent(p.name);
-  const url=p.url||`https://en.wikipedia.org/w/index.php?search=${q}&ns0=1`;
-  return `<a class="card-source-link" href="${url}" target="_blank" rel="noopener noreferrer">${_svgExtLink}Wikipedia</a>`;
+  return `<a class="card-source-link" href="${p.url||`https://en.wikipedia.org/w/index.php?search=${q}&ns0=1`}" target="_blank" rel="noopener noreferrer">${_svgExtLink}Wikipedia</a>`;
 }
 function _trailerLink(f){
   const q=encodeURIComponent(f.title+' '+(f.year||'')+' trailer');
-  const url=f.trailer||`https://www.youtube.com/results?search_query=${q}`;
-  return `<a class="card-source-link card-trailer-link" href="${url}" target="_blank" rel="noopener noreferrer">${_svgPlay}Trailer</a>`;
+  return `<a class="card-source-link card-trailer-link" href="${f.trailer||`https://www.youtube.com/results?search_query=${q}`}" target="_blank" rel="noopener noreferrer">${_svgPlay}Trailer</a>`;
 }
 
-// Renders cards HTML for an array of films or people
+// ── Year key per item type ──
+function _yearOf(item, isFilms){ return isFilms ? (item.year||null) : (item.born||null); }
+
+// ── Apply sort + year filter to an items array ──
+function _applyControls(items, isFilms, sortDir, yearFilter){
+  let out = yearFilter!=null ? items.filter(x=>_yearOf(x,isFilms)===yearFilter) : [...items];
+  out.sort((a,b)=> sortDir==='desc'
+    ? (_yearOf(b,isFilms)||0)-(_yearOf(a,isFilms)||0)
+    : (_yearOf(a,isFilms)||0)-(_yearOf(b,isFilms)||0));
+  return out;
+}
+
+// ── Render card HTML ──
 function _renderCards(items, isFilms, isDirectors){
-  let html='';
+  if(!items.length) return `<div style="color:var(--text-dim);font-family:var(--ff-mono);font-size:0.9rem;padding:18px 0;text-align:center">Nessun risultato per questo filtro.</div>`;
+  let h='';
   if(isFilms){
     items.forEach(f=>{
-      const actorsStr=(f.actors||[]).length>0?`<div class="film-actors-line">Con: ${f.actors.join(', ')}</div>`:'';
-      const dirStr=f.director?`<span class="film-dir">Regia: ${f.director}</span>`:'';
-      const ratingStr=f.rating?` <span style="color:var(--gold);opacity:0.7;font-size:0.75rem">★ ${f.rating.toFixed(1)}</span>`:'';
-      html+=`<div class="film-card"><div class="film-year">${f.year||'—'}</div><div class="film-info"><div class="film-title">${f.title}${f.itTitle?` <span class="film-it-title">(${f.itTitle})</span>`:''}</div><div class="film-meta"><span class="film-genre-tag g-${f.genre||'Drammatico'}">${f.genre||'—'}</span>${dirStr}${ratingStr}</div>${f.synopsis?`<div class="film-synopsis">${f.synopsis}</div>`:''}${actorsStr}<div class="card-links">${_wikiLinkFilm(f)}${_trailerLink(f)}</div></div></div>`;
+      const actors=(f.actors||[]).length?`<div class="film-actors-line">Con: ${f.actors.join(', ')}</div>`:'';
+      const dir=f.director?`<span class="film-dir">Regia: ${f.director}</span>`:'';
+      const rat=f.rating?` <span style="color:var(--gold);opacity:0.7;font-size:0.75rem">★ ${f.rating.toFixed(1)}</span>`:'';
+      h+=`<div class="film-card"><div class="film-year">${f.year||'—'}</div><div class="film-info"><div class="film-title">${f.title}${f.itTitle?` <span class="film-it-title">(${f.itTitle})</span>`:''}</div><div class="film-meta"><span class="film-genre-tag g-${f.genre||'Drammatico'}">${f.genre||'—'}</span>${dir}${rat}</div>${f.synopsis?`<div class="film-synopsis">${f.synopsis}</div>`:''}${actors}<div class="card-links">${_wikiLinkFilm(f)}${_trailerLink(f)}</div></div></div>`;
     });
   } else if(isDirectors){
     items.forEach(d=>{
-      const yearsStr=(d.born||'—')+(d.died?` — ${d.died}`:'');
-      const knownStr=d.knownFor&&d.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${d.knownFor.slice(0,3).join(' · ')}</div>`:'';
-      html+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${d.name}</div><div class="actor-years">${yearsStr}</div>${d.bio?`<div class="actor-bio">${d.bio.slice(0,300)}${d.bio.length>300?'…':''}</div>`:''}${knownStr}${_wikiLinkPerson(d)}</div></div>`;
+      const yrs=(d.born||'—')+(d.died?` — ${d.died}`:'');
+      const kn=d.knownFor&&d.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${d.knownFor.slice(0,3).join(' · ')}</div>`:'';
+      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${d.name}</div><div class="actor-years">${yrs}</div>${d.bio?`<div class="actor-bio">${d.bio.slice(0,300)}${d.bio.length>300?'…':''}</div>`:''}${kn}${_wikiLinkPerson(d)}</div></div>`;
     });
   } else {
     items.forEach(a=>{
-      const yearsStr=(a.born||'—')+(a.died?` — ${a.died}`:'');
-      const knownStr=a.knownFor&&a.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${a.knownFor.slice(0,3).join(' · ')}</div>`:'';
-      html+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${a.name}</div><div class="actor-years">${yearsStr}</div>${a.bio?`<div class="actor-bio">${a.bio.slice(0,300)}${a.bio.length>300?'…':''}</div>`:''}${knownStr}${_wikiLinkPerson(a)}</div></div>`;
+      const yrs=(a.born||'—')+(a.died?` — ${a.died}`:'');
+      const kn=a.knownFor&&a.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${a.knownFor.slice(0,3).join(' · ')}</div>`:'';
+      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${a.name}</div><div class="actor-years">${yrs}</div>${a.bio?`<div class="actor-bio">${a.bio.slice(0,300)}${a.bio.length>300?'…':''}</div>`:''}${kn}${_wikiLinkPerson(a)}</div></div>`;
     });
   }
-  return html;
+  return h;
 }
 
-// Builds the "load more" button shown at the bottom of the tt-body
-function _loadMoreBtn(code, loadedSoFar, totalResults, isFilms){
-  const remaining = totalResults - loadedSoFar;
-  if(!isFilms || remaining <= 0) return '';
-  const nextBatch = Math.min(20, remaining);
+// ── Controls bar (sort btn + year dropdown) ──
+function _buildControls(code, st, isFilms, isDirectors){
+  const yearLabel = isFilms ? 'Anno uscita' : 'Anno nascita';
+  const allYears  = [...new Set(st.allItems.map(x=>_yearOf(x,isFilms)).filter(Boolean))].sort((a,b)=>b-a);
+  const opts      = allYears.map(y=>`<option value="${y}"${st.yearFilter===y?' selected':''}>${y}</option>`).join('');
+  const sortIcon  = st.sortDir==='desc' ? '↓' : '↑';
+  const sortTip   = st.sortDir==='desc'
+    ? (isFilms ? 'Più recenti prima' : 'Più giovani prima')
+    : (isFilms ? 'Più vecchi prima'  : 'Più anziani prima');
+  return `<div class="tt-controls">
+    <button class="tt-ctrl-btn" onclick="toggleTooltipSort('${code}')" title="Inverti ordine">${sortIcon} ${sortTip}</button>
+    <span class="tt-ctrl-label">${yearLabel}:</span>
+    <select class="tt-ctrl-select" onchange="filterTooltipYear('${code}',this.value?+this.value:null)">
+      <option value="">Tutti</option>${opts}
+    </select>
+  </div>`;
+}
+
+// ── Load-more button ──
+function _loadMoreBtn(code, st){
+  if(st.mode!=='films' || st.page>=st.totalPages) return '';
+  const remaining=(st.totalResults - st.allItems.length).toLocaleString('it-IT');
   return `<div id="tt-load-more" style="padding:16px 0 8px;text-align:center">
-    <button onclick="loadMoreTooltip('${code}')" style="background:transparent;border:1px solid rgba(255,215,0,0.35);color:var(--gold);font-family:var(--ff-mono);font-size:0.72rem;letter-spacing:0.14em;padding:8px 20px;border-radius:4px;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(255,215,0,0.08)'" onmouseout="this.style.background='transparent'">
-      CARICA ALTRI ${nextBatch} ▾ &nbsp;<span style="opacity:0.5">(${remaining.toLocaleString('it-IT')} rimanenti su TMDB)</span>
+    <button class="tt-ctrl-btn" style="font-size:0.70rem;padding:8px 22px" onclick="loadMoreTooltip('${code}')">
+      CARICA ALTRI 20 ▾ &nbsp;<span style="opacity:0.45">(${remaining} rimanenti su TMDB)</span>
     </button>
   </div>`;
 }
 
-// ── Main tooltip builder ────────────────────────────────────
-async function buildPinnedTooltip(code){
-  const c=COUNTRIES[code];
-  const isFilms=viewMode==='films';
-  const isDirectors=viewMode==='directors';
-  const modeLabel=isFilms?'FILM':isDirectors?'REGISTI':'ATTORI';
-  const tmdbTotal=(COUNTRY_STATS[code]||{})[isFilms?'films':isDirectors?'directors':'actors']||'…';
+// ── Re-render only the cards+load-more section (sort/filter changed) ──
+function _refreshCards(code){
+  const st=_ttState[`${viewMode}_${code}`];
+  if(!st) return;
+  const isFilms     = st.mode==='films';
+  const isDirectors = st.mode==='directors';
+  const visible     = _applyControls(st.allItems, isFilms, st.sortDir, st.yearFilter);
+  const cardsEl     = document.getElementById('tt-cards');
+  const moreEl      = document.getElementById('tt-load-more');
+  if(cardsEl) cardsEl.innerHTML = _renderCards(visible, isFilms, isDirectors);
+  if(moreEl)  moreEl.outerHTML  = _loadMoreBtn(code, st);
+  else if(cardsEl) cardsEl.insertAdjacentHTML('afterend', _loadMoreBtn(code, st));
+  // Refresh year dropdown options (more years may have loaded)
+  const ctrlEl=document.querySelector('.tt-controls select');
+  if(ctrlEl){
+    const allYears=[...new Set(st.allItems.map(x=>_yearOf(x,isFilms)).filter(Boolean))].sort((a,b)=>b-a);
+    ctrlEl.innerHTML=`<option value="">Tutti</option>`+allYears.map(y=>`<option value="${y}"${st.yearFilter===y?' selected':''}>${y}</option>`).join('');
+  }
+}
 
-  // Show loading state immediately
-  ttEl.innerHTML=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${c.flag} ${typeof tmdbTotal==='number'?tmdbTotal.toLocaleString('it-IT'):tmdbTotal} ${modeLabel} su TMDB · ${c.continent.toUpperCase()}</div></div><button class="modal-close" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body"><div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento dati TMDB…</span></div></div>`;
+// ── Main tooltip builder ─────────────────────────────────────
+async function buildPinnedTooltip(code){
+  const c          = COUNTRIES[code];
+  const isFilms    = viewMode==='films';
+  const isDirectors= viewMode==='directors';
+  const modeLabel  = isFilms?'FILM':isDirectors?'REGISTI':'ATTORI';
+  const tmdbTotal  = (COUNTRY_STATS[code]||{})[isFilms?'films':isDirectors?'directors':'actors']||'…';
+  const totalFmt   = typeof tmdbTotal==='number' ? tmdbTotal.toLocaleString('it-IT') : tmdbTotal;
+
+  // Immediate loading state
+  ttEl.innerHTML=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${c.flag} ${totalFmt} ${modeLabel} su TMDB · ${c.continent.toUpperCase()}</div></div><button class="modal-close" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body"><div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento dati TMDB…</span></div></div>`;
   ttEl.className='pinned';
   setTimeout(()=>ttEl.classList.add('tt-vis'),10);
   ttOv.classList.add('active');
@@ -1278,59 +1347,67 @@ async function buildPinnedTooltip(code){
   const {data:items, totalPages, totalResults}=await fetchCountryData(code, 1);
   if(selectedCode!==code) return;
 
-  // Store pagination state
-  const pagKey=`${viewMode}_${code}`;
-  _tooltipPagination[pagKey]={ page:1, totalPages, totalResults, loadedCount:items.length };
+  // Init state
+  const stKey=`${viewMode}_${code}`;
+  _ttState[stKey]={ code, mode:viewMode, sortDir:'desc', yearFilter:null,
+                    allItems:[...items], page:1, totalPages, totalResults };
+  const st=_ttState[stKey];
 
-  // Sort: films newest first, people youngest first
-  const sorted=isFilms
-    ? [...items].sort((a,b)=>(b.year||0)-(a.year||0))
-    : [...items].sort((a,b)=>(b.born||0)-(a.born||0));
+  // Subtitle
+  const sub=isFilms
+    ? `Top ${items.length} su ${totalResults.toLocaleString('it-IT')} totali TMDB · ${c.continent.toUpperCase()}`
+    : `${items.length} ${modeLabel} più attivi · ${c.continent.toUpperCase()}`;
 
-  // Subtitle: "Top 20 su 75.813 totali TMDB"
-  const subtitleStr=isFilms
-    ? `Top ${sorted.length} su ${totalResults.toLocaleString('it-IT')} totali TMDB · ${c.continent.toUpperCase()}`
-    : `${sorted.length} ${modeLabel} più attivi · ${c.continent.toUpperCase()}`;
+  const visible=_applyControls(st.allItems, isFilms, st.sortDir, st.yearFilter);
 
-  let html=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${subtitleStr}</div></div><button class="modal-close" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body">`;
-
-  if(sorted.length===0){
-    html+=`<div style="color:var(--text-dim);font-family:var(--ff-mono);font-size:1.05rem;padding:20px 0">Nessun dato disponibile da TMDB per questa nazione.</div>`;
-  } else {
-    html+=_renderCards(sorted, isFilms, isDirectors);
-    html+=_loadMoreBtn(code, sorted.length, totalResults, isFilms);
-  }
-
-  html+=`</div>`;
+  let html=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${sub}</div></div><button class="modal-close" onclick="closePinnedTooltip()">✕</button></div>`;
+  html+=_buildControls(code, st, isFilms, isDirectors);
+  html+=`<div class="tt-body"><div id="tt-cards">`;
+  html+=items.length===0
+    ? `<div style="color:var(--text-dim);font-family:var(--ff-mono);font-size:1rem;padding:20px 0">Nessun dato disponibile da TMDB per questa nazione.</div>`
+    : _renderCards(visible, isFilms, isDirectors);
+  html+=`</div>${_loadMoreBtn(code,st)}</div>`;
   ttEl.innerHTML=html;
 }
 
-// ── Load more (appends next page to open tooltip) ────────────
-async function loadMoreTooltip(code){
-  const isFilms=viewMode==='films';
-  if(!isFilms) return;
-  const pagKey=`${viewMode}_${code}`;
-  const pag=_tooltipPagination[pagKey];
-  if(!pag||pag.page>=pag.totalPages) return;
+// ── Public: toggle sort direction ────────────────────────────
+function toggleTooltipSort(code){
+  const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
+  st.sortDir = st.sortDir==='desc' ? 'asc' : 'desc';
+  _refreshCards(code);
+  // Update button label
+  const btn=document.querySelector('.tt-controls .tt-ctrl-btn');
+  if(btn){
+    const isFilms=st.mode==='films';
+    const icon=st.sortDir==='desc'?'↓':'↑';
+    const tip=st.sortDir==='desc'
+      ?(isFilms?'Più recenti prima':'Più giovani prima')
+      :(isFilms?'Più vecchi prima':'Più anziani prima');
+    btn.textContent=`${icon} ${tip}`;
+  }
+}
 
-  // Replace button with mini-spinner
+// ── Public: filter by year ───────────────────────────────────
+function filterTooltipYear(code, year){
+  const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
+  st.yearFilter = year!=null ? Number(year)||null : null;
+  _refreshCards(code);
+}
+
+// ── Load more (appends next page) ────────────────────────────
+async function loadMoreTooltip(code){
+  const st=_ttState[`${viewMode}_${code}`];
+  if(!st||st.mode!=='films'||st.page>=st.totalPages) return;
+
   const btnWrap=document.getElementById('tt-load-more');
   if(btnWrap) btnWrap.innerHTML=`<div class="tt-loading" style="padding:8px 0;justify-content:center"><div class="tt-spinner"></div><span>Caricamento…</span></div>`;
 
-  const nextPage=pag.page+1;
-  const {data:newItems}=await fetchCountryData(code, nextPage);
+  const {data:newItems}=await fetchCountryData(code, st.page+1);
   if(selectedCode!==code) return;
 
-  pag.page=nextPage;
-  pag.loadedCount+=newItems.length;
-
-  // Append new cards before the load-more button
-  const body=ttEl.querySelector('.tt-body');
-  if(!body) return;
-  const newHtml=_renderCards(newItems, true, false);
-  const newMoreBtn=_loadMoreBtn(code, pag.loadedCount, pag.totalResults, true);
-  if(btnWrap) btnWrap.outerHTML=newHtml+newMoreBtn;
-  else body.insertAdjacentHTML('beforeend', newHtml+newMoreBtn);
+  st.page++;
+  st.allItems.push(...newItems);
+  _refreshCards(code);   // re-applies sort+filter and rebuilds load-more btn
 }
 
 function closePinnedTooltip(){
