@@ -110,7 +110,7 @@
     .legend-count { font-size:0.93rem; color:var(--text-dim); margin-left:auto; font-family:var(--ff-mono); }
 
     /* ── TOOLTIP CATEGORY CHIPS ── */
-    .tt-cat-row { display:flex; flex-wrap:wrap; gap:5px; padding:8px 12px 10px; border-bottom:1px solid var(--border); }
+    .tt-cat-row { display:flex; flex-wrap:wrap; gap:5px; padding:8px 12px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
     .tt-cat-label { width:100%; font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.18em; color:var(--text-dim); text-transform:uppercase; margin-bottom:3px; }
     .tt-cat-chip { background:transparent; border:1px solid var(--border2); color:var(--text-dim); font-family:var(--ff-mono); font-size:0.72rem; letter-spacing:0.07em; padding:4px 11px; cursor:pointer; text-transform:uppercase; border-radius:20px; transition:color 0.2s,border-color 0.2s,background 0.2s; }
     .tt-cat-chip:hover { border-color:rgba(255,215,0,0.5); color:var(--text); }
@@ -1339,7 +1339,7 @@ function _buildCatChips(code, st, isFilms, isDirectors){
   }
   const all = `<button class="tt-cat-chip${st.catFilter===null?' active':''}" onclick="filterTooltipCat('${code}',null)">Tutti</button>`;
   const chips = cats.map(c=>
-    `<button class="tt-cat-chip${st.catFilter===c?' active':''}" onclick="filterTooltipCat('${code}','${c.replace(/'/g,"\\'")}'">${c}</button>`
+    `<button class="tt-cat-chip${st.catFilter===c?' active':''}" onclick="filterTooltipCat('${code}','${c.replace(/'/g,"\\'")}')"> ${c}</button>`
   ).join('');
   return `<div class="tt-cat-row"><div class="tt-cat-label">${label}</div>${all}${chips}</div>`;
 }
