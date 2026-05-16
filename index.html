@@ -1281,20 +1281,31 @@ function _renderCards(items, isFilms, isDirectors){
   return h;
 }
 
+// ── Full static year range for the dropdown ──────────────────
+// Films: 1895 → currentYear   |   People: 1850 → currentYear
+// Independent of what is currently loaded — covers the full history of cinema.
+function _yearOptions(isFilms, yearFilter){
+  const now   = new Date().getFullYear();
+  const start = isFilms ? 1895 : 1850;
+  const opts  = [];
+  for(let y = now; y >= start; y--){
+    opts.push(`<option value="${y}"${yearFilter===y?' selected':''}>${y}</option>`);
+  }
+  return opts.join('');
+}
+
 // ── Controls bar (sort btn + year dropdown) ──
 function _buildControls(code, st, isFilms, isDirectors){
   const yearLabel = isFilms ? 'Anno uscita' : 'Anno nascita';
-  const allYears  = [...new Set(st.allItems.map(x=>_yearOf(x,isFilms)).filter(Boolean))].sort((a,b)=>b-a);
-  const opts      = allYears.map(y=>`<option value="${y}"${st.yearFilter===y?' selected':''}>${y}</option>`).join('');
   const sortIcon  = st.sortDir==='desc' ? '↓' : '↑';
   const sortTip   = st.sortDir==='desc'
     ? (isFilms ? 'Più recenti prima' : 'Più giovani prima')
-    : (isFilms ? 'Più vecchi prima'  : 'Più anziani prima');
+    : (isFilms ? 'Più vecchi prima (dal 1895)' : 'Più anziani prima');
   return `<div class="tt-controls">
     <button class="tt-ctrl-btn" onclick="toggleTooltipSort('${code}')" title="Inverti ordine">${sortIcon} ${sortTip}</button>
     <span class="tt-ctrl-label">${yearLabel}:</span>
     <select class="tt-ctrl-select" onchange="filterTooltipYear('${code}',this.value?+this.value:null)">
-      <option value="">Tutti</option>${opts}
+      <option value="">Tutti gli anni</option>${_yearOptions(isFilms, st.yearFilter)}
     </select>
   </div>`;
 }
@@ -1322,11 +1333,10 @@ function _refreshCards(code){
   if(cardsEl) cardsEl.innerHTML = _renderCards(visible, isFilms, isDirectors);
   if(moreEl)  moreEl.outerHTML  = _loadMoreBtn(code, st);
   else if(cardsEl) cardsEl.insertAdjacentHTML('afterend', _loadMoreBtn(code, st));
-  // Refresh year dropdown options (more years may have loaded)
+  // Refresh year dropdown — always use full static range (currentYear → 1895/1850)
   const ctrlEl=document.querySelector('.tt-controls select');
   if(ctrlEl){
-    const allYears=[...new Set(st.allItems.map(x=>_yearOf(x,isFilms)).filter(Boolean))].sort((a,b)=>b-a);
-    ctrlEl.innerHTML=`<option value="">Tutti</option>`+allYears.map(y=>`<option value="${y}"${st.yearFilter===y?' selected':''}>${y}</option>`).join('');
+    ctrlEl.innerHTML=`<option value="">Tutti gli anni</option>`+_yearOptions(isFilms, st.yearFilter);
   }
 }
 
