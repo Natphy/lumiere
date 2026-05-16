@@ -508,9 +508,11 @@ function _applyStats() {
 // _tooltipPagination removed — replaced by _ttState below
 
 // ── Per-country data fetch — called on tile click or "load more" ──
-// Returns { data:[], totalPages, totalResults }
-async function fetchCountryData(code, page = 1) {
-  const cacheKey = `${viewMode}_${code}_p${page}`;
+// sortDir: 'desc' (newest first, default) | 'asc' (oldest first, back to 1895)
+// Returns { data:[], totalPages, totalResults, sortDir }
+async function fetchCountryData(code, page = 1, sortDir = 'desc') {
+  // Cache key includes sort direction so desc and asc pages are stored separately
+  const cacheKey = `${viewMode}_${code}_p${page}_${sortDir}`;
   const cached   = cacheGet(cacheKey);
   if (cached) {
     _storeCountryData(code, cached.data, viewMode);
@@ -520,7 +522,7 @@ async function fetchCountryData(code, page = 1) {
   try {
     let data, totalPages = 1, totalResults = 0;
     if (viewMode === 'films') {
-      const res  = await fetch(`${API_BASE}/films?country=${code}&page=${page}`);
+      const res  = await fetch(`${API_BASE}/films?country=${code}&page=${page}&sort=${sortDir}`);
       if (!res.ok) throw new Error('films HTTP ' + res.status);
       const json = await res.json();
       data         = json.films        || [];
@@ -535,13 +537,13 @@ async function fetchCountryData(code, page = 1) {
       totalPages   = 1;
       totalResults = data.length;
     }
-    const result = { data, totalPages, totalResults };
+    const result = { data, totalPages, totalResults, sortDir };
     cacheSet(cacheKey, result);
     _storeCountryData(code, data, viewMode);
     return result;
   } catch (err) {
-    console.warn(`Lumière fetchCountryData ${viewMode}/${code} p${page}:`, err);
-    return { data: [], totalPages: 1, totalResults: 0 };
+    console.warn(`Lumière fetchCountryData ${viewMode}/${code} p${page} ${sortDir}:`, err);
+    return { data: [], totalPages: 1, totalResults: 0, sortDir };
   }
 }
 
@@ -1343,8 +1345,8 @@ async function buildPinnedTooltip(code){
   setTimeout(()=>ttEl.classList.add('tt-vis'),10);
   ttOv.classList.add('active');
 
-  // Fetch page 1
-  const {data:items, totalPages, totalResults}=await fetchCountryData(code, 1);
+  // Fetch page 1 (always desc first — newest films at top)
+  const {data:items, totalPages, totalResults}=await fetchCountryData(code, 1, 'desc');
   if(selectedCode!==code) return;
 
   // Init state
@@ -1371,18 +1373,42 @@ async function buildPinnedTooltip(code){
 }
 
 // ── Public: toggle sort direction ────────────────────────────
-function toggleTooltipSort(code){
+// For films: re-fetches from API with the opposite date sort so that
+// "↑ Più vecchi" really starts from 1895, not just reverses the loaded page.
+// For people: no API re-fetch needed (single fixed list).
+async function toggleTooltipSort(code){
   const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
-  st.sortDir = st.sortDir==='desc' ? 'asc' : 'desc';
+  const newDir = st.sortDir==='desc' ? 'asc' : 'desc';
+  st.sortDir   = newDir;
+  st.yearFilter= null;
+
+  if(st.mode==='films'){
+    // Reset loaded items and re-fetch page 1 with new API sort
+    st.allItems=[];
+    st.page=0;
+    const cardsEl=document.getElementById('tt-cards');
+    if(cardsEl) cardsEl.innerHTML=`<div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento ${newDir==='asc'?'dal 1895…':'film recenti…'}</span></div>`;
+    const moreEl=document.getElementById('tt-load-more');
+    if(moreEl) moreEl.remove();
+
+    const {data, totalPages, totalResults}=await fetchCountryData(code, 1, newDir);
+    if(selectedCode!==code) return;
+    st.allItems  = [...data];
+    st.page      = 1;
+    st.totalPages= totalPages;
+    st.totalResults=totalResults;
+  }
+
   _refreshCards(code);
+
   // Update button label
   const btn=document.querySelector('.tt-controls .tt-ctrl-btn');
   if(btn){
     const isFilms=st.mode==='films';
-    const icon=st.sortDir==='desc'?'↓':'↑';
-    const tip=st.sortDir==='desc'
+    const icon=newDir==='desc'?'↓':'↑';
+    const tip=newDir==='desc'
       ?(isFilms?'Più recenti prima':'Più giovani prima')
-      :(isFilms?'Più vecchi prima':'Più anziani prima');
+      :(isFilms?'Più vecchi prima (dal 1895)':'Più anziani prima');
     btn.textContent=`${icon} ${tip}`;
   }
 }
@@ -1402,7 +1428,7 @@ async function loadMoreTooltip(code){
   const btnWrap=document.getElementById('tt-load-more');
   if(btnWrap) btnWrap.innerHTML=`<div class="tt-loading" style="padding:8px 0;justify-content:center"><div class="tt-spinner"></div><span>Caricamento…</span></div>`;
 
-  const {data:newItems}=await fetchCountryData(code, st.page+1);
+  const {data:newItems}=await fetchCountryData(code, st.page+1, st.sortDir);
   if(selectedCode!==code) return;
 
   st.page++;
