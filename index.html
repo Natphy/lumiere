@@ -67,21 +67,19 @@
     }
 
     .modal { width:82vw; height:82vh; display:flex; flex-direction:column; }
-    .modal-header, #gm-header, #tooltip .tt-header { padding:16px 20px 14px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; }
-    .modal-title, #gm-title, #tooltip .tt-title { font-family:var(--ff-display); font-size:2.25rem; letter-spacing:0.08em; color:var(--gold); text-shadow:0 0 16px rgba(255,215,0,0.4); }
-    .modal-subtitle, #gm-count, #tooltip .tt-subtitle { font-family:var(--ff-mono); font-size:0.81rem; color:var(--text-dim); letter-spacing:0.18em; text-transform:uppercase; }
+    .modal-header, #tooltip .tt-header { padding:16px 20px 14px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; }
+    .modal-title, #tooltip .tt-title { font-family:var(--ff-display); font-size:2.25rem; letter-spacing:0.08em; color:var(--gold); text-shadow:0 0 16px rgba(255,215,0,0.4); }
+    .modal-subtitle, #tooltip .tt-subtitle { font-family:var(--ff-mono); font-size:0.81rem; color:var(--text-dim); letter-spacing:0.18em; text-transform:uppercase; }
     .modal-subtitle { margin-top:2px; }
-    #gm-title { margin-bottom:4px; }
-    #gm-count { padding:14px 20px 0; }
     #tooltip .tt-title { margin-bottom:4px; }
     .modal-close { background:transparent; border:1px solid var(--border2); color:var(--text-dim); font-family:var(--ff-mono); font-size:0.975rem; letter-spacing:0.12em; padding:5px 12px; border-radius:5px; cursor:pointer; flex-shrink:0; pointer-events:auto; transition:color 0.25s,border-color 0.25s,box-shadow 0.25s; }
     .modal-close:hover { border-color:var(--gold); color:var(--gold); box-shadow:0 0 14px rgba(255,215,0,0.28); }
 
-    /* Shared scrollable body: .modal-body, #gm-list-wrap, #tooltip .tt-body */
-    .modal-body, #gm-list-wrap, #tooltip .tt-body { overflow-y:auto; padding:14px 20px 20px; flex:1; scrollbar-width:thin; scrollbar-color:var(--panel-scroll) transparent; }
-    .modal-body::-webkit-scrollbar, #gm-list-wrap::-webkit-scrollbar, #tooltip .tt-body::-webkit-scrollbar { width:3px; }
-    .modal-body::-webkit-scrollbar-track, #gm-list-wrap::-webkit-scrollbar-track { background:transparent; }
-    .modal-body::-webkit-scrollbar-thumb, #gm-list-wrap::-webkit-scrollbar-thumb, #tooltip .tt-body::-webkit-scrollbar-thumb { background:var(--panel-scroll); border-radius:2px; }
+    /* Shared scrollable body */
+    .modal-body, #tooltip .tt-body { overflow-y:auto; padding:14px 20px 20px; flex:1; scrollbar-width:thin; scrollbar-color:var(--panel-scroll) transparent; }
+    .modal-body::-webkit-scrollbar, #tooltip .tt-body::-webkit-scrollbar { width:3px; }
+    .modal-body::-webkit-scrollbar-track-track { background:transparent; }
+    .modal-body::-webkit-scrollbar-thumb-thumb, #tooltip .tt-body::-webkit-scrollbar-thumb { background:var(--panel-scroll); border-radius:2px; }
 
     .modal-section-divider { border:none; border-top:1px solid var(--border2); margin:8px 0 22px; }
     .app-description { margin-bottom:22px; }
@@ -103,35 +101,20 @@
     .source-url { font-family:var(--ff-mono); font-size:0.81rem; color:var(--text-dim); letter-spacing:0.04em; }
     .source-desc { font-family:var(--ff-title); font-size:1.23rem; color:var(--text-mid); margin-top:2px; line-height:1.5; }
 
-    /* Genre modal */
-    .genre-modal-sm { width:82vw; max-width:82vw; max-height:82vh; padding:0; display:flex; flex-direction:column; overflow:hidden; }
-    #gm-desc { font-family:var(--ff-title); font-size:1.23rem; color:var(--text-mid); line-height:1.6; padding:8px 20px 0; }
-    #gm-examples { font-family:var(--ff-mono); font-size:0.78rem; color:var(--text-dim); line-height:1.6; padding:10px 20px 0; border-top:none; }
-    #gm-list-wrap { margin-top:0; border-top:1px solid var(--border); min-height:0; }
-    .gm-list-label { font-family:var(--ff-mono); font-size:0.81rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--text-dim); margin-bottom:10px; }
-    .gm-row { display:grid; align-items:center; padding:7px 10px; border-bottom:1px solid rgba(255,255,255,0.045); cursor:default; transition:background 0.15s; border-radius:3px; }
-    .gm-row:last-child { border-bottom:none; }
-    .gm-row:hover { background:rgba(255,255,255,0.04); }
-    .gm-row-film, .gm-row-person { grid-template-columns:5rem 2fr 2rem 1.5fr; gap:14px; }
-    .gm-year { font-family:var(--ff-mono); font-size:1.65rem; color:var(--gold); opacity:0.8; }
-    .gm-name { font-family:var(--ff-title); font-size:1.43rem; color:var(--text-hi); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .gm-flag { font-size:1rem; text-align:center; }
-    .gm-sub  { font-family:var(--ff-mono); font-size:0.78rem; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-
-    /* ── LEFT PANEL ── */
-    .left-panel { position:fixed; top:74px; left:10px; bottom:44px; width:300px; opacity:0; pointer-events:none; transform:translateX(-10px); transition:opacity 0.26s ease,transform 0.22s ease; z-index:200; overflow-y:auto; padding:14px 12px; display:flex; flex-direction:column; gap:16px; }
-    .left-panel.open { opacity:1; pointer-events:auto; transform:translateX(0); }
+    /* ── PANELS (shared) ── */
     .panel-title { font-family:var(--ff-mono); font-size:0.87rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px; }
     .legend-item { display:flex; align-items:center; gap:9px; padding:3px 5px; cursor:pointer; border-radius:2px; transition:background 0.2s,color 0.2s; margin-bottom:4px; position:relative; }
     .legend-item:hover, .legend-item.active { background:rgba(255,255,255,0.04); color:var(--gold); }
     .legend-item:hover .legend-text, .legend-item.active .legend-text { color:var(--gold); }
     .legend-text { font-size:1.14rem; color:var(--text); line-height:1; transition:color 0.2s; }
     .legend-count { font-size:0.93rem; color:var(--text-dim); margin-left:auto; font-family:var(--ff-mono); }
-    .filter-group { display:flex; flex-direction:column; gap:4px; }
-    .filter-btn { background:transparent; border:1px solid var(--border2); color:var(--text-dim); font-family:var(--ff-mono); font-size:0.84rem; letter-spacing:0.06em; padding:5px 10px; cursor:pointer; text-transform:uppercase; border-radius:4px; position:relative; overflow:hidden; transition:color 0.2s,border-color 0.2s,box-shadow 0.2s; text-align:left; }
-    .filter-btn::before { content:''; position:absolute; inset:0; background:rgba(255,215,0,0.10); transform:translateX(-100%); transition:transform 0.3s ease; }
-    .filter-btn:hover::before, .filter-btn.active::before { transform:translateX(0); }
-    .filter-btn:hover, .filter-btn.active { border-color:var(--gold); color:var(--gold); }
+
+    /* ── TOOLTIP CATEGORY CHIPS ── */
+    .tt-cat-row { display:flex; flex-wrap:wrap; gap:5px; padding:8px 12px 10px; border-bottom:1px solid var(--border); }
+    .tt-cat-label { width:100%; font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.18em; color:var(--text-dim); text-transform:uppercase; margin-bottom:3px; }
+    .tt-cat-chip { background:transparent; border:1px solid var(--border2); color:var(--text-dim); font-family:var(--ff-mono); font-size:0.72rem; letter-spacing:0.07em; padding:4px 11px; cursor:pointer; text-transform:uppercase; border-radius:20px; transition:color 0.2s,border-color 0.2s,background 0.2s; }
+    .tt-cat-chip:hover { border-color:rgba(255,215,0,0.5); color:var(--text); }
+    .tt-cat-chip.active { border-color:var(--gold); color:var(--gold); background:rgba(255,215,0,0.08); }
 
     /* ── CANVAS ── */
     .canvas-wrapper { position:fixed; top:64px; left:0; right:0; bottom:34px; z-index:0; overflow:hidden; }
@@ -212,8 +195,7 @@
     /* ── EDGE TABS ── */
     .edge-tab { position:fixed; top:calc(64px + (100vh - 64px - 34px) / 2); transform:translateY(-50%); z-index:210; display:flex; align-items:center; justify-content:center; background:rgba(7,9,15,0.82); backdrop-filter:blur(6px); border:1px solid var(--gold); color:var(--gold); font-size:1.1rem; cursor:pointer; border-radius:5px; overflow:hidden; width:38px; height:38px; transition:color 0.25s,box-shadow 0.25s; }
     .edge-tab:hover { color:#fff; box-shadow:0 0 18px rgba(255,215,0,0.4); }
-    #edge-left.active, #edge-right.active { opacity:0; pointer-events:none; transition:opacity 0.2s ease; }
-    #edge-left { left:10px; }
+    #edge-right.active { opacity:0; pointer-events:none; transition:opacity 0.2s ease; }
     #edge-right { right:10px; }
     @media(max-width:767px) { .edge-tab { top:calc(52px + (100vh - 52px - 28px) / 2); width:34px; height:34px; font-size:0.95rem; } }
     @media(max-width:479px) { .edge-tab { top:calc(46px + (100vh - 46px - 28px) / 2); width:32px; height:32px; font-size:0.88rem; } }
@@ -227,7 +209,7 @@
     #zoom-hint.vis { opacity:1; transform:translateX(-50%) translateY(0); }
 
     /* ── RESPONSIVE ── */
-    @media(max-width:1099px) { .hdr-btn,.update-btn{font-size:0.82rem} footer{font-size:0.65rem} #tooltip{width:300px} .tt-title{font-size:1.95rem} .tt-subtitle{font-size:0.70rem} .film-year{font-size:1.43rem} .film-title{font-size:1.24rem} .film-genre-tag{font-size:0.65rem} .film-dir{font-size:0.70rem} .film-synopsis{font-size:1.07rem} .film-actors-line{font-size:0.68rem} .actor-name{font-size:1.24rem} .actor-years{font-size:1.11rem} .actor-bio{font-size:1.07rem} .actor-films-line{font-size:0.68rem} .panel-title{font-size:0.75rem} .legend-text{font-size:0.99rem} .legend-count{font-size:0.81rem} .filter-btn{font-size:0.73rem} .cc-name{font-size:1.17rem} .cc-meta{font-size:0.70rem} .modal-title{font-size:2rem} .modal-subtitle{font-size:0.75rem} .modal-close{font-size:0.845rem} .app-desc-text{font-size:1.3rem} .guide-label{font-size:1.17rem} .guide-desc{font-size:1.17rem} .guide-icon{font-size:0.975rem} .sources-cat-title{font-size:0.75rem} .source-name{font-size:1.17rem} .source-url{font-size:0.73rem} .source-desc{font-size:1.105rem} #gm-desc{font-size:1.07rem} #gm-examples{font-size:0.68rem} .gm-list-label{font-size:0.70rem} .gm-name{font-size:1.24rem} .gm-sub{font-size:0.68rem} .gm-year{font-size:1.43rem} }
+    @media(max-width:1099px) { .hdr-btn,.update-btn{font-size:0.82rem} footer{font-size:0.65rem} #tooltip{width:300px} .tt-title{font-size:1.95rem} .tt-subtitle{font-size:0.70rem} .film-year{font-size:1.43rem} .film-title{font-size:1.24rem} .film-genre-tag{font-size:0.65rem} .film-dir{font-size:0.70rem} .film-synopsis{font-size:1.07rem} .film-actors-line{font-size:0.68rem} .actor-name{font-size:1.24rem} .actor-years{font-size:1.11rem} .actor-bio{font-size:1.07rem} .actor-films-line{font-size:0.68rem} .panel-title{font-size:0.75rem} .legend-text{font-size:0.99rem} .legend-count{font-size:0.81rem} .cc-name{font-size:1.17rem} .cc-meta{font-size:0.70rem} .modal-title{font-size:2rem} .modal-subtitle{font-size:0.75rem} .modal-close{font-size:0.845rem} .app-desc-text{font-size:1.3rem} .guide-label{font-size:1.17rem} .guide-desc{font-size:1.17rem} .guide-icon{font-size:0.975rem} .sources-cat-title{font-size:0.75rem} .source-name{font-size:1.17rem} .source-url{font-size:0.73rem} .source-desc{font-size:1.105rem} }
     @media(max-width:767px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .logo .tagline{display:none} .mode-num{display:none} #updateBtn{display:none} .hdr-btn,.update-btn{height:1.9rem;font-size:0.74rem;padding:0 12px;letter-spacing:0.12em} .left-panel,.right-panel{top:62px;bottom:38px;width:268px} footer{height:28px;font-size:0.66rem;padding:0 12px} .footer-status{display:none} .canvas-wrapper{top:52px;bottom:28px} #tooltip{width:min(300px,90vw)} }
     @media(max-width:479px) { header{height:46px;padding:6px 8px;align-items:center} .logo h1{font-size:1.35rem} .mode-num{display:none} .left-panel,.right-panel{width:min(290px,90vw);top:56px;bottom:38px} .hdr-btn,.update-btn{height:1.35rem;padding:0 8px;font-size:0.70rem;letter-spacing:0.08em} footer{height:28px;padding:0 10px} .footer-status{display:none} .canvas-wrapper{top:46px;bottom:28px} #tooltip{width:min(290px,92vw)} }
 
@@ -289,12 +271,50 @@
         <div class="modal-title" style="margin-bottom:12px">Utilizzo</div>
         <div class="guide-item"><span class="guide-icon">▦</span><div class="guide-info"><div class="guide-label">Il Mosaico</div><div class="guide-desc">Ogni <strong>tessera</strong> rappresenta una nazione. La sua dimensione è proporzionale al numero di film, registi o attori nella modalità attiva. Le tessere sono raggruppate in colonne geografiche (Americhe, Europa Ovest, Europa Centrale, Europa Est, Asia Ovest, Asia Est).</div></div></div>
         <div class="guide-item"><span class="guide-icon">⊙</span><div class="guide-info"><div class="guide-label">Hover &amp; Animazione Automatica</div><div class="guide-desc">Passando il cursore su una tessera, questa si espande in altezza e <strong>l'intera colonna si allarga</strong> insieme. Al lancio del sito — e dopo <strong>2 secondi di inattività</strong> — parte un'animazione automatica che scorre casualmente le tessere con un ingrandimento doppio rispetto all'hover manuale. L'animazione si interrompe non appena si muove il cursore o si tocca lo schermo.</div></div></div>
-        <div class="guide-item"><span class="guide-icon">◉</span><div class="guide-info"><div class="guide-label">Click — Pannello Dettaglio</div><div class="guide-desc">Un click su una tessera apre il pannello con la lista completa di <strong>film</strong> (dal più recente al più antico), <strong>registi</strong> o <strong>attori</strong> (dal più giovane al più anziano) della nazione. Ogni scheda film mostra anno, titolo, genere, regia, sinossi, cast e due link: <strong>Wikipedia</strong> (icona ↗) e <strong>Trailer</strong> (icona ▶) che si aprono in una nuova scheda. Per registi e attori è presente il link Wikipedia. Chiudi con <strong>✕</strong> o cliccando fuori.</div></div></div>
-        <div class="guide-item"><span class="guide-icon">◈</span><div class="guide-info"><div class="guide-label">Modalità — Film · Registi · Attori</div><div class="guide-desc">L'header presenta tre modalità selezionabili: <strong>Film</strong>, <strong>Registi</strong>, <strong>Attori</strong>. Ogni modalità ridimensiona le tessere, aggiorna il pannello sinistra con la tassonomia relativa e adatta il contenuto dei pannelli dettaglio. Il numero su ogni tessera riflette sempre la quantità nella modalità corrente.</div></div></div>
-        <div class="guide-item"><span class="guide-icon">▤</span><div class="guide-info"><div class="guide-label">Pannello Sinistra — Categorie</div><div class="guide-desc">Mostra <strong>Generi di Film</strong>, <strong>Movimenti Cinematografici</strong> o <strong>Tipologie di Attori</strong> in base alla modalità attiva. Cliccando su una voce si apre una scheda con descrizione della categoria e la <strong>lista completa</strong> (scrollabile) di tutti i film, registi o attori appartenenti a quella categoria, ordinati cronologicamente. I <strong>filtri</strong> sotto la lista oscurano le tessere non pertinenti. Pannello aperto/chiuso con la tab laterale o cliccando fuori.</div></div></div>
-        <div class="guide-item"><span class="guide-icon">▥</span><div class="guide-info"><div class="guide-label">Pannello Destra — Nazioni</div><div class="guide-desc">Lista di tutte le nazioni ordinate per numero di elementi (film, registi o attori) nella modalità corrente. Passare il cursore su una nazione nella lista anima la tessera corrispondente. Cliccando si apre lo stesso pannello dettagliato.</div></div></div>
+        <div class="guide-item"><span class="guide-icon">◉</span><div class="guide-info"><div class="guide-label">Click — Pannello Dettaglio Nazione</div><div class="guide-desc">Un click su una tessera apre il pannello con la lista di <strong>film</strong> (dal più recente al più antico), <strong>registi</strong> o <strong>attori</strong> della nazione. Ogni scheda film mostra anno, titolo, genere, regia, sinossi, cast e link a <strong>Wikipedia</strong> e <strong>Trailer</strong>. Nella barra dei controlli puoi: invertire l'<strong>ordine cronologico</strong> (↓ / ↑), filtrare per <strong>anno</strong>, filtrare per <strong>genere</strong> (film), <strong>movimento</strong> (registi) o <strong>tipologia</strong> (attori) tramite i chip selezionabili. I film si caricano a pagine di 20: usa il pulsante <strong>Carica altri</strong> per scorrere l'intero catalogo TMDB. Chiudi con <strong>✕</strong> o cliccando fuori.</div></div></div>
+        <div class="guide-item"><span class="guide-icon">◈</span><div class="guide-info"><div class="guide-label">Modalità — Film · Registi · Attori</div><div class="guide-desc">L'header presenta tre modalità selezionabili: <strong>Film</strong>, <strong>Registi</strong>, <strong>Attori</strong>. Ogni modalità ridimensiona le tessere e adatta il contenuto del pannello dettaglio. Il numero su ogni tessera riflette sempre la quantità nella modalità corrente.</div></div></div>
+        <div class="guide-item"><span class="guide-icon">▥</span><div class="guide-info"><div class="guide-label">Pannello Destra — Nazioni</div><div class="guide-desc">Lista di tutte le nazioni ordinate per numero di elementi nella modalità corrente. Passare il cursore su una nazione nella lista anima la tessera corrispondente. Cliccando si apre lo stesso pannello dettaglio.</div></div></div>
         <div class="guide-item"><span class="guide-icon">⤢</span><div class="guide-info"><div class="guide-label">Navigazione</div><div class="guide-desc"><strong>Scroll / Pinch</strong>: zoom. <strong>Drag</strong>: sposta la vista. <strong>Doppio click</strong> su tessera: zoom centrato sulla nazione. <strong>Doppio click</strong> su area vuota: reimposta la vista.</div></div></div>
         <div class="guide-item"><span class="guide-icon">↺</span><div class="guide-info"><div class="guide-label">Bottone AGGIORNA</div><div class="guide-desc">Simula la sincronizzazione con i database cinematografici (IMDb, TMDB) e aggiorna la data dell'ultimo aggiornamento nel footer.</div></div></div>
+      </div>
+      <hr class="modal-section-divider">
+      <div class="sources-category">
+        <div class="modal-title" style="margin-bottom:12px">Legenda</div>
+        <div class="sources-cat-title">Generi Cinematografici (Film)</div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Azione</div><div class="source-desc">Film caratterizzati da sequenze di combattimento, inseguimenti, esplosioni e ritmo serrato. Mettono il protagonista di fronte a pericoli fisici estremi.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Animazione</div><div class="source-desc">Opere realizzate fotogramma per fotogramma tramite disegni, modelli 3D o stop-motion. Spaziano dalla favola al dramma adulto.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Avventura</div><div class="source-desc">Viaggi verso l'ignoto, esplorazioni e imprese eroiche in luoghi esotici. L'accento è sul percorso più che sul conflitto fisico.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Commedia</div><div class="source-desc">Film progettati per far ridere tramite situazioni assurde, dialoghi brillanti o personaggi comici. Spesso nasconde critica sociale.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Documentario</div><div class="source-desc">Registrazione della realtà con intento informativo o artistico. Dal reportage giornalistico al cinema di osservazione poetico.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Drammatico</div><div class="source-desc">Genere centrale del cinema, esplora conflitti umani profondi, relazioni e trasformazioni interiori con tono serio e realistico.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Fantascienza</div><div class="source-desc">Speculazione su scienza e tecnologia futura: viaggi spaziali, intelligenza artificiale, distopie, alieni e alterazioni della realtà.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Fantasy</div><div class="source-desc">Mondi immaginari con magia, creature mitologiche e leggi fisiche alternative. Spesso fonde epica eroica e fiaba.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Guerra</div><div class="source-desc">Rappresentazione del conflitto armato in tutte le sue sfaccettature: eroismo, trauma, fratellanza e orrore della violenza.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Horror</div><div class="source-desc">Film progettati per suscitare paura attraverso suspense, shock visivo o minacce soprannaturali. Riflette le angosce culturali di un'epoca.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Musical</div><div class="source-desc">Storie raccontate in parte tramite canzoni e danze. Dalla commedia musicale di Broadway all'epopea romantica.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Romantico</div><div class="source-desc">Storie d'amore e relazioni sentimentali al centro della narrazione. Può fondersi con commedia, dramma o thriller.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Storico</div><div class="source-desc">Ricostruzione di eventi o epoche del passato con accuratezza scenografica. Può includere figure reali o fictionali in contesti autentici.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Thriller</div><div class="source-desc">Tensione e suspense dominano la narrazione. Il protagonista fronteggia pericoli occulti, intrighi o cacce all'uomo psicologicamente intense.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Western</div><div class="source-desc">L'epopea della frontiera americana (o italiana). Paesaggi aridi, sceriffi e fuorilegge, codice d'onore e pistole.</div></div></div>
+
+        <div class="sources-cat-title" style="margin-top:22px">Movimenti Cinematografici (Registi)</div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Pionieri</div><div class="source-desc">I padri fondatori del linguaggio cinematografico (1895–1927): da Méliès a Griffith, da Eisenstein a Sjöström. Nati indicativamente entro il 1900.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Classico</div><div class="source-desc">Il cinema classico narrativo del periodo aureo hollywoodiano e mondiale (1920–1960). Nati indicativamente tra il 1901 e il 1920.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Neorealismo</div><div class="source-desc">Il cinema della realtà sociale nel dopoguerra: Italia e correnti affini nel mondo. Nati indicativamente tra il 1921 e il 1935.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Nouvelle Vague</div><div class="source-desc">La rivoluzione del cinema moderno europeo degli anni Sessanta: Godard, Truffaut, Varda. Nati indicativamente tra il 1936 e il 1950.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">New Hollywood</div><div class="source-desc">La generazione che reinventò il cinema americano dal 1967 al 1980: Coppola, Scorsese, Spielberg. Nati indicativamente tra il 1951 e il 1963.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Cinema d'autore</div><div class="source-desc">Il cinema come visione personale e sguardo unico sul mondo: da Bergman a Tarkovsky, da Fellini a Kiarostami. Nati indicativamente tra il 1964 e il 1978.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Documentario</div><div class="source-desc">I maestri del cinema del reale e del documentario d'autore.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Animazione</div><div class="source-desc">I padri e i maestri del cinema animato mondiale: da Miyazaki a McLaren.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Horror &amp; Thriller</div><div class="source-desc">I registi del perturbante, del genere e della tensione: da Argento a Cronenberg, da Kurosawa K. a Hitchcock.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Contemporaneo</div><div class="source-desc">Il cinema globale dagli anni Novanta a oggi: nuove voci, nuovi sguardi, nuovi linguaggi. Nati indicativamente dopo il 1978.</div></div></div>
+
+        <div class="sources-cat-title" style="margin-top:22px">Tipologie di Attori</div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Drammatico</div><div class="source-desc">I grandi protagonisti del cinema drammatico mondiale, dalle origini al presente. Nati indicativamente entro il 1920.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Auteur</div><div class="source-desc">Muse e collaboratori del cinema d'autore europeo e mondiale: Bergman, Antonioni, Godard, Tarkovsky. Nati indicativamente tra il 1921 e il 1955.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Commedia</div><div class="source-desc">I maestri del cinema comico, dall'era del muto alle commedie contemporanee. Nati indicativamente tra il 1921 e il 1945.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Azione</div><div class="source-desc">Le star del cinema popolare di genere: azione, samurai, arti marziali, thriller. Nati indicativamente tra il 1946 e il 1970.</div></div></div>
+        <div class="source-item"><div class="source-info"><div class="source-name">Antagonista</div><div class="source-desc">I grandi interpreti di villain e personaggi moralmente ambigui, tra i più indimenticabili del cinema. Nati indicativamente dopo il 1956.</div></div></div>
       </div>
       <hr class="modal-section-divider">
       <div class="sources-category">
@@ -310,26 +330,8 @@
   </div>
 </div>
 
-<!-- ── GENRE MODAL ── -->
-<div class="overlay" id="genre-overlay" onclick="if(event.target===this)closeGenreModal()" style="z-index:2100">
-  <div class="genre-modal-sm">
-    <div id="gm-header"><div id="gm-title"></div><button class="modal-close" onclick="closeGenreModal()" style="margin-left:16px">✕</button></div>
-    <div id="gm-count"></div>
-    <div id="gm-desc"></div>
-    <div id="gm-examples"></div>
-    <div id="gm-list-wrap"><div class="gm-list-label" id="gm-list-label"></div><div id="gm-list"></div></div>
-  </div>
-</div>
-
 <!-- ── EDGE TABS ── -->
-<div id="edge-left" class="edge-tab" onclick="togglePanel('left')" title="Generi">▤</div>
 <div id="edge-right" class="edge-tab" onclick="togglePanel('right')" title="Nazioni">▥</div>
-
-<!-- ── LEFT PANEL ── -->
-<div class="left-panel" id="leftPanel">
-  <div><div class="panel-title" id="lp-title">Genere di Film</div><div id="genre-list"></div></div>
-  <div><div class="panel-title" id="lp-filter-title">Filtra per Genere</div><div class="filter-group" id="genre-filters"></div></div>
-</div>
 
 <!-- ── CANVAS ── -->
 <div class="canvas-wrapper"><canvas id="lumiere-canvas"></canvas></div>
@@ -606,8 +608,7 @@ function codeHash(code){
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
-let viewMode    = 'films';
-let activeGenre = new Set();
+let viewMode = 'films';
 let hoveredCode  = null;
 let selectedCode = null;
 let maxCountCode = null;   // country with most films/actors (gets gold tile)
@@ -715,12 +716,7 @@ function getFilteredDirectors(code){
 }
 
 // Genre/movement filtering is not available in live mode (would require all data loaded)
-function isDimmed(code){
-  if(activeGenre.size===0||viewMode!=='films') return false;
-  const genres=COUNTRY_STATS[code]?.genres||{};
-  // Country is dimmed if it has zero sample films for ALL active genres
-  return ![...activeGenre].some(g=>(genres[g]||0)>0);
-}
+function isDimmed(code){ return false; }
 
 // ═══════════════════════════════════════════════════════
 // MOSAIC LAYOUT ENGINE
@@ -1250,9 +1246,37 @@ function _trailerLink(f){
 // ── Year key per item type ──
 function _yearOf(item, isFilms){ return isFilms ? (item.year||null) : (item.born||null); }
 
-// ── Apply sort + year filter to an items array ──
-function _applyControls(items, isFilms, sortDir, yearFilter){
-  let out = yearFilter!=null ? items.filter(x=>_yearOf(x,isFilms)===yearFilter) : [...items];
+// ── Derive movement era from director birth year (approximation) ──
+function _dirEra(born){
+  if(!born) return null;
+  if(born<=1900) return 'Pionieri';
+  if(born<=1920) return 'Classico';
+  if(born<=1935) return 'Neorealismo';
+  if(born<=1950) return 'Nouvelle Vague';
+  if(born<=1963) return 'New Hollywood';
+  if(born<=1978) return "Cinema d'autore";
+  return 'Contemporaneo';
+}
+
+// ── Derive actor type from birth year (approximation) ──
+function _actorType(born){
+  if(!born) return null;
+  if(born<=1920) return 'Drammatico';
+  if(born<=1945) return 'Auteur';
+  if(born<=1958) return 'Commedia';
+  if(born<=1970) return 'Azione';
+  return 'Antagonista';
+}
+
+// ── Apply sort + year + category filter to an items array ──
+function _applyControls(items, isFilms, isDirectors, sortDir, yearFilter, catFilter){
+  let out = [...items];
+  if(yearFilter!=null) out=out.filter(x=>_yearOf(x,isFilms)===yearFilter);
+  if(catFilter!=null){
+    if(isFilms)        out=out.filter(f=>f.genre===catFilter);
+    else if(isDirectors) out=out.filter(d=>_dirEra(d.born)===catFilter);
+    else                 out=out.filter(a=>_actorType(a.born)===catFilter);
+  }
   out.sort((a,b)=> sortDir==='desc'
     ? (_yearOf(b,isFilms)||0)-(_yearOf(a,isFilms)||0)
     : (_yearOf(a,isFilms)||0)-(_yearOf(b,isFilms)||0));
@@ -1299,6 +1323,27 @@ function _yearOptions(isFilms, yearFilter){
   return opts.join('');
 }
 
+// ── Category chips (genre / movement / actor-type) ──
+function _buildCatChips(code, st, isFilms, isDirectors){
+  const isActors = !isFilms && !isDirectors;
+  let cats, label;
+  if(isFilms){
+    cats  = Object.keys(GENRE_DEFS);
+    label = 'Genere';
+  } else if(isDirectors){
+    cats  = ['Pionieri','Classico','Neorealismo','Nouvelle Vague','New Hollywood',"Cinema d'autore",'Contemporaneo'];
+    label = 'Movimento (per anno di nascita)';
+  } else {
+    cats  = ['Drammatico','Auteur','Commedia','Azione','Antagonista'];
+    label = 'Tipologia (per anno di nascita)';
+  }
+  const all = `<button class="tt-cat-chip${st.catFilter===null?' active':''}" onclick="filterTooltipCat('${code}',null)">Tutti</button>`;
+  const chips = cats.map(c=>
+    `<button class="tt-cat-chip${st.catFilter===c?' active':''}" onclick="filterTooltipCat('${code}','${c.replace(/'/g,"\\'")}'">${c}</button>`
+  ).join('');
+  return `<div class="tt-cat-row"><div class="tt-cat-label">${label}</div>${all}${chips}</div>`;
+}
+
 // ── Controls bar (sort btn + year dropdown) ──
 function _buildControls(code, st, isFilms, isDirectors){
   const yearLabel = isFilms ? 'Anno uscita' : 'Anno nascita';
@@ -1332,17 +1377,20 @@ function _refreshCards(code){
   if(!st) return;
   const isFilms     = st.mode==='films';
   const isDirectors = st.mode==='directors';
-  const visible     = _applyControls(st.allItems, isFilms, st.sortDir, st.yearFilter);
+  const visible     = _applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.yearFilter, st.catFilter);
   const cardsEl     = document.getElementById('tt-cards');
   const moreEl      = document.getElementById('tt-load-more');
   if(cardsEl) cardsEl.innerHTML = _renderCards(visible, isFilms, isDirectors);
   if(moreEl)  moreEl.outerHTML  = _loadMoreBtn(code, st);
   else if(cardsEl) cardsEl.insertAdjacentHTML('afterend', _loadMoreBtn(code, st));
-  // Refresh year dropdown — always use full static range (currentYear → 1895/1850)
+  // Refresh year dropdown
   const ctrlEl=document.querySelector('.tt-controls select');
-  if(ctrlEl){
-    ctrlEl.innerHTML=`<option value="">Tutti gli anni</option>`+_yearOptions(isFilms, st.yearFilter);
-  }
+  if(ctrlEl) ctrlEl.innerHTML=`<option value="">Tutti gli anni</option>`+_yearOptions(isFilms, st.yearFilter);
+  // Refresh category chips (active state)
+  document.querySelectorAll('.tt-cat-chip').forEach(btn=>{
+    const cat=btn.textContent.trim();
+    btn.classList.toggle('active', cat==='Tutti'?st.catFilter===null:st.catFilter===cat);
+  });
 }
 
 // ── Main tooltip builder ─────────────────────────────────────
@@ -1366,7 +1414,7 @@ async function buildPinnedTooltip(code){
 
   // Init state
   const stKey=`${viewMode}_${code}`;
-  _ttState[stKey]={ code, mode:viewMode, sortDir:'desc', yearFilter:null,
+  _ttState[stKey]={ code, mode:viewMode, sortDir:'desc', yearFilter:null, catFilter:null,
                     allItems:[...items], page:1, totalPages, totalResults };
   const st=_ttState[stKey];
 
@@ -1375,9 +1423,10 @@ async function buildPinnedTooltip(code){
     ? `Top ${items.length} su ${totalResults.toLocaleString('it-IT')} totali TMDB · ${c.continent.toUpperCase()}`
     : `${items.length} ${modeLabel} più attivi · ${c.continent.toUpperCase()}`;
 
-  const visible=_applyControls(st.allItems, isFilms, st.sortDir, st.yearFilter);
+  const visible=_applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.yearFilter, st.catFilter);
 
   let html=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${sub}</div></div><button class="modal-close" onclick="closePinnedTooltip()">✕</button></div>`;
+  html+=_buildCatChips(code, st, isFilms, isDirectors);
   html+=_buildControls(code, st, isFilms, isDirectors);
   html+=`<div class="tt-body"><div id="tt-cards">`;
   html+=items.length===0
@@ -1435,6 +1484,13 @@ function filterTooltipYear(code, year){
   _refreshCards(code);
 }
 
+// ── Public: filter by category (genre / movement / actor-type) ──
+function filterTooltipCat(code, cat){
+  const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
+  st.catFilter = cat || null;
+  _refreshCards(code);
+}
+
 // ── Load more (appends next page) ────────────────────────────
 async function loadMoreTooltip(code){
   const st=_ttState[`${viewMode}_${code}`];
@@ -1463,15 +1519,14 @@ function closePinnedTooltip(){
 // PANELS
 // ═══════════════════════════════════════════════════════
 function togglePanel(side){
-  const panel=document.getElementById(side==='left'?'leftPanel':'rightPanel');
-  const tab=document.getElementById(side==='left'?'edge-left':'edge-right');
+  const panel=document.getElementById('rightPanel');
+  const tab=document.getElementById('edge-right');
   const isOpen=panel.classList.contains('open');
   if(isOpen){
     panel.classList.remove('open');
     tab.classList.remove('active');
     document.getElementById('panel-overlay').classList.remove('active');
   } else {
-    closeAllPanels();
     panel.classList.add('open');
     tab.classList.add('active');
     document.getElementById('panel-overlay').classList.add('active');
@@ -1479,8 +1534,8 @@ function togglePanel(side){
 }
 
 function closeAllPanels(){
-  ['leftPanel','rightPanel'].forEach(id=>document.getElementById(id).classList.remove('open'));
-  ['edge-left','edge-right'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('rightPanel').classList.remove('open');
+  document.getElementById('edge-right').classList.remove('active');
   document.getElementById('panel-overlay').classList.remove('active');
 }
 
@@ -1496,145 +1551,6 @@ function closeGuide(){
   document.getElementById('guideBtn').classList.remove('active');
 }
 
-function showGenreModal(genre){ showCategoryModal(genre); }
-
-function showCategoryModal(key){
-  const isDirectors=viewMode==='directors';
-  const isActors=viewMode==='actors';
-  let def, count, countLabel, examplesText, titleColor, listItems=[], listLabel='';
-
-  const getFlag=code=>(COUNTRIES[code]&&COUNTRIES[code].flag)||'';
-
-  if(isDirectors){
-    def=MOVEMENT_DEFS[key]; if(!def) return;
-    // Show directors loaded so far (from countries visited); no movement field from TMDB
-    const items=LOADED_DIRECTORS.slice().sort((a,b)=>(b.born||0)-(a.born||0));
-    count=items.length; countLabel='registi caricati';
-    titleColor='var(--gold)';
-    examplesText='';
-    listLabel=count>0?`${count} REGISTI CARICATI`:'NESSUN REGISTA CARICATO — CLICCA UNA NAZIONE PER INIZIARE';
-    listItems=items.map(d=>`<div class="gm-row gm-row-person">
-      <span class="gm-year">${d.born||'—'}</span>
-      <span class="gm-name">${d.name}</span>
-      <span class="gm-flag">${getFlag(d.country||'')}</span>
-      <span class="gm-sub">${d.country&&COUNTRIES[d.country]?COUNTRIES[d.country].name:(d.country||'')}</span>
-    </div>`);
-  } else if(isActors){
-    def=ACTOR_TYPE_DEFS[key]; if(!def) return;
-    const items=LOADED_ACTORS.slice().sort((a,b)=>(b.born||0)-(a.born||0));
-    count=items.length; countLabel='attori caricati';
-    titleColor='var(--gold)';
-    examplesText='';
-    listLabel=count>0?`${count} ATTORI CARICATI`:'NESSUN ATTORE CARICATO — CLICCA UNA NAZIONE PER INIZIARE';
-    listItems=items.map(a=>`<div class="gm-row gm-row-person">
-      <span class="gm-year">${a.born||'—'}</span>
-      <span class="gm-name">${a.name}</span>
-      <span class="gm-flag">${getFlag(a.country||'')}</span>
-      <span class="gm-sub">${a.country&&COUNTRIES[a.country]?COUNTRIES[a.country].name:(a.country||'')}</span>
-    </div>`);
-  } else {
-    def=GENRE_DEFS[key]; if(!def) return;
-    const items=LOADED_FILMS.filter(f=>f.genre===key).sort((a,b)=>(b.year||0)-(a.year||0));
-    const estimatedTotal=Object.values(COUNTRY_STATS).reduce((sum,s)=>{
-      const gv=s.genres?.[key]||0;
-      if(!gv) return sum;
-      const sampled=Object.values(s.genres||{}).reduce((a,b)=>a+b,0)||1;
-      return sum+Math.round((s.films||0)*gv/sampled);
-    },0);
-    count=items.length;
-    countLabel=estimatedTotal>0
-      ? `film caricati · ~${estimatedTotal.toLocaleString('it-IT')} stimati nel DB`
-      : 'film caricati in questo genere';
-    titleColor='var(--gold)';
-    examplesText='';
-    listLabel=count>0
-      ? `${count} FILM CARICATI IN QUESTO GENERE`
-      : 'ESPLORA LE NAZIONI PER CARICARE I FILM DI QUESTO GENERE';
-    listItems=items.map(f=>`<div class="gm-row gm-row-film">
-      <span class="gm-year">${f.year||'—'}</span>
-      <span class="gm-name">${f.title}${f.itTitle?` <span class="gm-it-title">(${f.itTitle})</span>`:''}</span>
-      <span class="gm-flag">${getFlag(f.country||'')}</span>
-      <span class="gm-sub">${f.director||'—'}</span>
-    </div>`);
-  }
-
-  document.getElementById('gm-title').textContent=key;
-  document.getElementById('gm-title').style.color=titleColor;
-  document.getElementById('gm-count').textContent=`${count} ${countLabel}`;
-  document.getElementById('gm-desc').textContent=def.desc;
-  const exEl=document.getElementById('gm-examples');
-  exEl.textContent=examplesText;
-  exEl.style.display=examplesText?'block':'none';
-  document.getElementById('gm-list-label').textContent=listLabel;
-  document.getElementById('gm-list').innerHTML=listItems.join('');
-  document.getElementById('gm-list-wrap').scrollTop=0;
-  document.getElementById('genre-overlay').classList.add('open');
-}
-
-function closeGenreModal(){
-  document.getElementById('genre-overlay').classList.remove('open');
-}
-
-// ═══════════════════════════════════════════════════════
-// LEFT PANEL RENDER
-// ═══════════════════════════════════════════════════════
-function renderLeftPanel(){
-  const isDirectors=viewMode==='directors';
-  const isActors=viewMode==='actors';
-  const defs=isDirectors?MOVEMENT_DEFS:isActors?ACTOR_TYPE_DEFS:GENRE_DEFS;
-
-  document.getElementById('lp-title').textContent=isDirectors?'Movimenti Cinematografici':isActors?'Tipologie di Attori':'Genere di Film';
-  document.getElementById('lp-filter-title').textContent=isDirectors?'Filtra per Movimento':isActors?'Filtra per Tipologia':'Filtra per Genere';
-
-  const gl=document.getElementById('genre-list');
-  gl.innerHTML='';
-  Object.entries(defs).forEach(([key,def])=>{
-    // For films: estimate per-genre total from COUNTRY_STATS sample (0 extra API calls)
-    // For directors/actors: no movement/type field from TMDB — show total loaded
-    const count=isDirectors
-      ? LOADED_DIRECTORS.length
-      : isActors
-        ? LOADED_ACTORS.length
-        : Object.values(COUNTRY_STATS).reduce((sum,s)=>{
-            const gv=s.genres?.[key]||0;
-            if(!gv) return sum;
-            const sampled=Object.values(s.genres||{}).reduce((a,b)=>a+b,0)||1;
-            return sum+Math.round((s.films||0)*gv/sampled);
-          },0);
-    const item=document.createElement('div');
-    item.className='legend-item';
-    item.innerHTML=`<div class="legend-text">${key}</div><div class="legend-count">${count>0?count.toLocaleString('it-IT'):'—'}</div>`;
-    item.onclick=()=>showCategoryModal(key);
-    gl.appendChild(item);
-  });
-
-  const gf=document.getElementById('genre-filters');
-  gf.innerHTML='';
-  const allBtn=document.createElement('button');
-  allBtn.className='filter-btn'+(activeGenre.size===0?' active':'');
-  allBtn.textContent='TUTTI';
-  allBtn.onclick=()=>setGenreFilter(null);
-  gf.appendChild(allBtn);
-
-  Object.keys(defs).forEach(key=>{
-    const btn=document.createElement('button');
-    btn.className='filter-btn'+(activeGenre.has(key)?' active':'');
-    btn.textContent=key;
-    btn.onclick=()=>setGenreFilter(key);
-    gf.appendChild(btn);
-  });
-}
-
-function setGenreFilter(genre){
-  if(genre===null){ activeGenre.clear(); }
-  else if(activeGenre.has(genre)){ activeGenre.delete(genre); }
-  else { activeGenre.add(genre); }
-  renderLeftPanel();
-  renderRightPanel();
-  // Close pinned tooltip if active country no longer has visible items
-  if(selectedCode&&isDimmed(selectedCode)) closePinnedTooltip();
-}
-
 // ═══════════════════════════════════════════════════════
 // RIGHT PANEL RENDER
 // ═══════════════════════════════════════════════════════
@@ -1643,19 +1559,8 @@ function renderRightPanel(){
   cl.innerHTML='';
   document.getElementById('rp-title').textContent='Nazioni';
 
-  // When genre filter active for films, estimate per-genre country counts
-  const hasGenreFilter=activeGenre.size>0&&viewMode==='films';
-  function _genreCount(code){
-    return [...activeGenre].reduce((sum,g)=>{
-      const s=COUNTRY_STATS[code]||{};
-      const gv=s.genres?.[g]||0;
-      const sampled=Object.values(s.genres||{}).reduce((a,b)=>a+b,0)||1;
-      return sum+Math.round((s.films||0)*gv/sampled);
-    },0);
-  }
-
   const sorted=Object.entries(COUNTRIES).map(([code,c])=>{
-    const count=hasGenreFilter?_genreCount(code):getCountryCount(code);
+    const count=getCountryCount(code);
     return {code,c,count};
   }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
 
@@ -1681,14 +1586,12 @@ function renderRightPanel(){
 function setViewMode(mode){
   if(viewMode===mode) return;
   viewMode=mode;
-  activeGenre.clear();
   document.querySelectorAll('.mode-btn').forEach(el=>el.classList.remove('active'));
   const el=document.getElementById('mode-stat-'+mode);
   if(el) el.classList.add('active');
   if(selectedCode) closePinnedTooltip();
   buildMosaicLayout();
   updateStats();
-  renderLeftPanel();
   renderRightPanel();
 }
 
@@ -1756,28 +1659,18 @@ window.addEventListener('resize',()=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(document.getElementById('guide-overlay').classList.contains('open')) closeGuide();
-    else if(document.getElementById('genre-overlay').classList.contains('open')) closeGenreModal();
     else if(selectedCode) closePinnedTooltip();
   }
 });
 
-// Click-outside: close open panels when clicking away
+// Click-outside: close right panel when clicking away
 document.addEventListener('click',e=>{
-  // Use composedPath() so detached nodes (rebuilt by renderLeftPanel) are still detected correctly
   const path=e.composedPath();
   const inOverlay=path.some(el=>el.classList?.contains('overlay')||el.id==='tt-overlay'||el.id==='panel-overlay');
   if(inOverlay) return;
-  const lp=document.getElementById('leftPanel');
   const rp=document.getElementById('rightPanel');
-  const edgeL=document.getElementById('edge-left');
   const edgeR=document.getElementById('edge-right');
-  const inLeft=path.some(el=>el===lp||el===edgeL);
   const inRight=path.some(el=>el===rp||el===edgeR);
-  if(lp.classList.contains('open')&&!inLeft){
-    lp.classList.remove('open');
-    edgeL.classList.remove('active');
-    document.getElementById('panel-overlay').classList.remove('active');
-  }
   if(rp.classList.contains('open')&&!inRight){
     rp.classList.remove('open');
     edgeR.classList.remove('active');
@@ -1795,14 +1688,12 @@ requestAnimationFrame(async ()=>{
   const now=new Date();
   const months=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   document.getElementById('last-update').textContent=`${now.getDate()} ${months[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;
-  renderLeftPanel();
   renderRightPanel();
   updateStats();
   draw();
   startAutoMode(); // avvia l'animazione automatica casuale al lancio
   // Fetch live stats from TMDB (resizes tiles when data arrives)
   await initStats();
-  renderLeftPanel();
   renderRightPanel();
 });
 </script>
