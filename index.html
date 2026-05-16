@@ -1381,17 +1381,28 @@ function _renderCards(items, isFilms, isDirectors){
 }
 
 // ── Decade chips ─────────────────────────────────────────────
-// Mostra un chip per ogni decade presente negli item caricati.
-// Solo decadi con almeno un item vengono mostrate.
+// Film: range fisso 1890→decade corrente (i dati TMDB coprono tutta la storia
+//   del cinema; non possiamo sapere quali decadi hanno film senza query extra).
+// Registi/Attori: solo decadi effettivamente presenti negli item caricati
+//   (vengono caricati tutti in una volta, quindi il campione è completo).
 function _buildDecadeChips(code, st, isFilms){
-  const presentDecades = new Set(
-    st.allItems.map(item=>{
-      const y=_yearOf(item,isFilms);
-      return y ? Math.floor(y/10)*10 : null;
-    }).filter(d=>d!==null)
-  );
-  if(presentDecades.size===0) return '';
-  const decades=[...presentDecades].sort((a,b)=>a-b);
+  const currentDecade = Math.floor(new Date().getFullYear()/10)*10;
+  let decades;
+  if(isFilms){
+    // Range statico: ogni decade dal 1890 ad oggi
+    decades=[];
+    for(let d=1890; d<=currentDecade; d+=10) decades.push(d);
+  } else {
+    // Calcolo dinamico dagli item caricati (birth year)
+    const presentDecades=new Set(
+      st.allItems.map(item=>{
+        const y=_yearOf(item,false);
+        return y ? Math.floor(y/10)*10 : null;
+      }).filter(d=>d!==null)
+    );
+    if(presentDecades.size===0) return '';
+    decades=[...presentDecades].sort((a,b)=>a-b);
+  }
   const active=st.decadeFilter;
   const all=`<button class="tt-cat-chip${active===null?' active':''}" onclick="filterTooltipDecade('${code}',null)">Tutti</button>`;
   const chips=decades.map(d=>
