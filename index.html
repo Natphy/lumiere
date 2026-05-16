@@ -380,7 +380,10 @@ const GENRE_DEFS = {
   'Romantico':    { color:'#ff6699', desc:'Storie d\'amore e relazioni sentimentali al centro della narrazione. Può fondersi con commedia, dramma o thriller.', examples:['Casablanca','Brief Encounter','Portrait of a Lady on Fire'] },
   'Storico':      { color:'#aa8800', desc:'Ricostruzione di eventi o epoche del passato con accuratezza scenografica. Può includere figure reali o fictionali in contesti autentici.', examples:['Cabiria','Schindler\'s List','The Last Emperor'] },
   'Thriller':     { color:'#ff4455', desc:'Tensione e suspense dominano la narrazione. Il protagonista fronteggia pericoli occulti, intrighi o cacce all\'uomo psicologicamente intense.', examples:['Rear Window','Chinatown','No Country for Old Men'] },
-  'Western':      { color:'#ff7700', desc:'L\'epopea della frontiera americana (o italiana). Paesaggi aridi, sceriffi e fuorilegge, codice d\'onore e pistole.', examples:['The Great Train Robbery','The Good, the Bad and the Ugly','Once Upon a Time in the West'] }
+  'Western':      { color:'#ff7700', desc:'L\'epopea della frontiera americana (o italiana). Paesaggi aridi, sceriffi e fuorilegge, codice d\'onore e pistole.', examples:['The Great Train Robbery','The Good, the Bad and the Ugly','Once Upon a Time in the West'] },
+  'Crimine':    { color:'#cc4400', desc:'Storie che ruotano attorno al crimine, alla malavita organizzata, alle rapine e ai detective. Dal noir classico al gangster movie.', examples:['The Godfather','Goodfellas','City of God'] },
+  'Mistero':    { color:'#5544aa', desc:'Trame avvolte nell\'enigma: delitti irrisolti, identità nascoste, segreti da scoprire. Il motore è la curiosità più che la paura.', examples:['Chinatown','Knives Out','The Name of the Rose'] },
+  'Famiglia':   { color:'#22aacc', desc:'Film pensati per un pubblico multigenerazionale: avventure, emozioni universali e valori condivisi che uniscono grandi e piccini.', examples:['E.T.','The Lion King','My Neighbor Totoro'] },
 };
 
 const COUNTRIES = {
@@ -632,7 +635,6 @@ const ACTOR_TYPE_DEFS = {
   'Commedia':     { desc:'I maestri del cinema comico, dall\'era del muto alle commedie contemporanee.' },
   'Azione':       { desc:'Le star del cinema popolare di genere: azione, samurai, arti marziali, thriller.' },
   'Antagonista':  { desc:'I grandi interpreti di villain e personaggi moralmente ambigui, tra i più indimenticabili del cinema.' },
-  'Caratterista': { desc:'I caratteristi e carattere assoluti che hanno costruito il cinema con ruoli di supporto e trasformazioni totali.' },
   'Musical':      { desc:'I protagonisti del cinema musicale e della danza: da Gene Kelly a Shah Rukh Khan.' },
   'Cinema muto':  { desc:'I pionieri del cinema muto che hanno inventato il linguaggio visivo prima della parola.' },
 };
@@ -1297,7 +1299,14 @@ function _trailerLink(f){
 function _yearOf(item, isFilms){ return isFilms ? (item.year||null) : (item.born||null); }
 
 // ── Derive movement era from director birth year (approximation) ──
-function _dirEra(born){
+function _dirEra(person){
+  const born  = (typeof person === 'number') ? person : person?.born;
+  const genre = (typeof person === 'object') ? person?.genre : null;
+  // Classificazione per genere dominante (più precisa dell'anno di nascita)
+  if(genre==='Documentario')                        return 'Documentario';
+  if(genre==='Animazione')                          return 'Animazione';
+  if(genre==='Horror'||genre==='Thriller'||genre==='Crimine'||genre==='Mistero') return 'Horror & Thriller';
+  // Classificazione per era (anno di nascita)
   if(!born) return null;
   if(born<=1900) return 'Pionieri';
   if(born<=1920) return 'Classico';
@@ -1309,9 +1318,15 @@ function _dirEra(born){
 }
 
 // ── Derive actor type from birth year (approximation) ──
-function _actorType(born){
+function _actorType(person){
+  const born  = (typeof person === 'number') ? person : person?.born;
+  const genre = (typeof person === 'object') ? person?.genre : null;
+  // Classificazione per genere dominante
+  if(genre==='Musical') return 'Musical';
+  // Classificazione per era
   if(!born) return null;
-  if(born<=1920) return 'Drammatico';
+  if(born<=1905) return 'Cinema muto';
+  if(born<=1925) return 'Drammatico';
   if(born<=1945) return 'Auteur';
   if(born<=1958) return 'Commedia';
   if(born<=1970) return 'Azione';
@@ -1324,8 +1339,8 @@ function _applyControls(items, isFilms, isDirectors, sortDir, yearFilter, catFil
   if(yearFilter!=null) out=out.filter(x=>_yearOf(x,isFilms)===yearFilter);
   if(catFilter!=null){
     if(isFilms)        out=out.filter(f=>f.genre===catFilter);
-    else if(isDirectors) out=out.filter(d=>_dirEra(d.born)===catFilter);
-    else                 out=out.filter(a=>_actorType(a.born)===catFilter);
+    else if(isDirectors) out=out.filter(d=>_dirEra(d)===catFilter);
+    else                 out=out.filter(a=>_actorType(a)===catFilter);
   }
   out.sort((a,b)=> sortDir==='desc'
     ? (_yearOf(b,isFilms)||0)-(_yearOf(a,isFilms)||0)

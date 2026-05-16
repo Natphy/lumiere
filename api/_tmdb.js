@@ -38,15 +38,15 @@ const GENRE_MAP = {
   12:    'Avventura',
   16:    'Animazione',
   35:    'Commedia',
-  80:    'Thriller',      // Crime
+  80:    'Crimine',       // Crime
   99:    'Documentario',
   18:    'Drammatico',
-  10751: 'Commedia',      // Family
+  10751: 'Famiglia',      // Family
   14:    'Fantasy',
   36:    'Storico',
   27:    'Horror',
   10402: 'Musical',
-  9648:  'Thriller',      // Mystery
+  9648:  'Mistero',       // Mystery
   10749: 'Romantico',
   878:   'Fantascienza',
   10770: 'Drammatico',    // TV Movie

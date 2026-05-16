@@ -14,7 +14,7 @@
  *   people: [{ tmdbId, name, born, died, bio, knownFor, profilePic }]
  * }
  */
-const { tmdb } = require('./_tmdb');
+const { tmdb, GENRE_MAP } = require('./_tmdb');
 
 // Fetch biography & birth year for a person.
 async function getPersonDetail(personId) {
@@ -64,17 +64,17 @@ module.exports = async function handler(req, res) {
       const results = await Promise.all(
         batch.map(f =>
           tmdb(`/movie/${f.id}/credits`)
-            .then(d => ({ filmTitle: f.title, crew: d.crew || [], cast: d.cast || [] }))
-            .catch(() => ({ filmTitle: f.title, crew: [], cast: [] }))
+            .then(d => ({ filmTitle: f.title, genreIds: f.genre_ids || [], crew: d.crew || [], cast: d.cast || [] }))
+            .catch(() => ({ filmTitle: f.title, genreIds: [], crew: [], cast: [] }))
         )
       );
       allCredits.push(...results);
     }
 
     // Step 3: aggregate people
-    const peopleMap = {};  // tmdbId → { name, filmCount, knownFor[] }
+    const peopleMap = {};  // tmdbId → { name, filmCount, knownFor[], genreCounts{} }
 
-    allCredits.forEach(({ filmTitle, crew, cast }) => {
+    allCredits.forEach(({ filmTitle, genreIds, crew, cast }) => {
       const list = type === 'director'
         ? crew.filter(p => p.job === 'Director')
         : cast.slice(0, 5);   // top-billed actors only
@@ -82,17 +82,26 @@ module.exports = async function handler(req, res) {
       list.forEach(p => {
         if (!p.id || !p.name) return;
         if (!peopleMap[p.id]) {
-          peopleMap[p.id] = { tmdbId: p.id, name: p.name, filmCount: 0, knownFor: [] };
+          peopleMap[p.id] = { tmdbId: p.id, name: p.name, filmCount: 0, knownFor: [], genreCounts: {} };
         }
         peopleMap[p.id].filmCount++;
         if (peopleMap[p.id].knownFor.length < 5) {
           peopleMap[p.id].knownFor.push(filmTitle);
         }
+        (genreIds).forEach(id => {
+          const label = GENRE_MAP[id];
+          if (label) peopleMap[p.id].genreCounts[label] = (peopleMap[p.id].genreCounts[label] || 0) + 1;
+        });
       });
     });
 
     // Sort by film count desc, take top 40
     const sorted = Object.values(peopleMap)
+      .map(p => {
+        const gc = p.genreCounts || {};
+        const genre = Object.entries(gc).sort((a,b) => b[1]-a[1])[0]?.[0] || null;
+        return { ...p, genre };
+      })
       .sort((a, b) => b.filmCount - a.filmCount)
       .slice(0, 40);
 
