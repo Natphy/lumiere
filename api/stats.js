@@ -35,7 +35,7 @@ async function countryStats(code) {
       code,
       films,
       directors: Math.max(1, Math.round(films * 0.4)),
-      actors:    Math.max(1, Math.min(Math.round(films * 3), 9999)),
+      actors:    Math.max(1, Math.round(films * 1.5)),
       genres     // e.g. { Drammatico: 9, Thriller: 4, Azione: 2, … }
     };
   } catch {
