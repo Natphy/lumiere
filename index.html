@@ -67,7 +67,8 @@
     }
 
     .modal { width:82vw; height:82vh; display:flex; flex-direction:column; }
-    .modal-header, #tooltip .tt-header { padding:16px 20px 14px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; }
+    .modal-header { padding:16px 20px 14px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; }
+    #tooltip .tt-header { padding:16px 20px 14px; display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; }
     .modal-title, #tooltip .tt-title { font-family:var(--ff-display); font-size:2.25rem; letter-spacing:0.08em; color:var(--gold); text-shadow:0 0 16px rgba(255,215,0,0.4); }
     .modal-subtitle, #tooltip .tt-subtitle { font-family:var(--ff-mono); font-size:0.81rem; color:var(--text-dim); letter-spacing:0.18em; text-transform:uppercase; }
     .modal-subtitle { margin-top:2px; }
@@ -110,7 +111,7 @@
     .legend-count { font-size:0.93rem; color:var(--text-dim); margin-left:auto; font-family:var(--ff-mono); }
 
     /* ── TOOLTIP CATEGORY CHIPS ── */
-    .tt-cat-row { display:flex; flex-wrap:wrap; gap:5px; padding:8px 20px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .tt-cat-row { display:flex; flex-wrap:wrap; gap:5px; padding:8px 20px 12px; flex-shrink:0; }
     .tt-cat-label { width:100%; font-family:var(--ff-mono); font-size:0.65rem; letter-spacing:0.18em; color:var(--text-dim); text-transform:uppercase; margin-bottom:5px; }
     .tt-cat-chip { display:inline-flex; align-items:center; justify-content:center; background:rgba(7,9,15,0.6); border:1px solid rgba(255,215,0,0.35); color:var(--text-dim); font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.14em; padding:4px 12px; cursor:pointer; text-transform:uppercase; border-radius:4px; position:relative; overflow:hidden; transition:color 0.25s,border-color 0.25s,box-shadow 0.25s; }
     .tt-cat-chip::before { content:''; position:absolute; inset:0; background:rgba(255,215,0,0.12); transform:translateX(-100%); transition:transform 0.3s ease; }
@@ -220,7 +221,7 @@
     .sources-desc { font-family:var(--ff-title); font-size:1.5rem; color:var(--text); line-height:1.5; }
 
     /* ── TOOLTIP CONTROLS BAR ── */
-    .tt-controls { display:flex; gap:8px; align-items:center; padding:9px 20px; border-bottom:1px solid rgba(255,215,0,0.1); flex-shrink:0; background:rgba(0,0,0,0.18); flex-wrap:wrap; }
+    .tt-controls { display:flex; gap:8px; align-items:center; padding:9px 20px; flex-shrink:0; flex-wrap:wrap; }
     .tt-ctrl-btn { display:inline-flex; align-items:center; justify-content:center; background:rgba(7,9,15,0.82); border:1px solid var(--gold); color:var(--gold); font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.15em; padding:5px 14px; border-radius:4px; cursor:pointer; text-transform:uppercase; position:relative; overflow:hidden; transition:color 0.25s,box-shadow 0.25s; white-space:nowrap; flex-shrink:0; }
     .tt-ctrl-btn::before { content:''; position:absolute; inset:0; background:rgba(255,215,0,0.12); transform:translateX(-100%); transition:transform 0.3s ease; }
     .tt-ctrl-btn:hover::before { transform:translateX(0); }
