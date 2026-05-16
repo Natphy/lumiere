@@ -110,11 +110,13 @@
     .legend-count { font-size:0.93rem; color:var(--text-dim); margin-left:auto; font-family:var(--ff-mono); }
 
     /* ── TOOLTIP CATEGORY CHIPS ── */
-    .tt-cat-row { display:flex; flex-wrap:wrap; gap:5px; padding:8px 12px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
-    .tt-cat-label { width:100%; font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.18em; color:var(--text-dim); text-transform:uppercase; margin-bottom:3px; }
-    .tt-cat-chip { background:transparent; border:1px solid var(--border2); color:var(--text-dim); font-family:var(--ff-mono); font-size:0.72rem; letter-spacing:0.07em; padding:4px 11px; cursor:pointer; text-transform:uppercase; border-radius:20px; transition:color 0.2s,border-color 0.2s,background 0.2s; }
-    .tt-cat-chip:hover { border-color:rgba(255,215,0,0.5); color:var(--text); }
-    .tt-cat-chip.active { border-color:var(--gold); color:var(--gold); background:rgba(255,215,0,0.08); }
+    .tt-cat-row { display:flex; flex-wrap:wrap; gap:5px; padding:8px 20px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .tt-cat-label { width:100%; font-family:var(--ff-mono); font-size:0.65rem; letter-spacing:0.18em; color:var(--text-dim); text-transform:uppercase; margin-bottom:5px; }
+    .tt-cat-chip { display:inline-flex; align-items:center; justify-content:center; background:rgba(7,9,15,0.6); border:1px solid rgba(255,215,0,0.35); color:var(--text-dim); font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.14em; padding:4px 12px; cursor:pointer; text-transform:uppercase; border-radius:4px; position:relative; overflow:hidden; transition:color 0.25s,border-color 0.25s,box-shadow 0.25s; }
+    .tt-cat-chip::before { content:''; position:absolute; inset:0; background:rgba(255,215,0,0.12); transform:translateX(-100%); transition:transform 0.3s ease; }
+    .tt-cat-chip:hover::before, .tt-cat-chip.active::before { transform:translateX(0); }
+    .tt-cat-chip:hover { border-color:rgba(255,215,0,0.65); color:var(--gold); }
+    .tt-cat-chip.active { border-color:var(--gold); color:var(--gold); box-shadow:0 0 12px rgba(255,215,0,0.3); }
 
     /* ── CANVAS ── */
     .canvas-wrapper { position:fixed; top:64px; left:0; right:0; bottom:34px; z-index:0; overflow:hidden; }
@@ -218,13 +220,12 @@
     .sources-desc { font-family:var(--ff-title); font-size:1.5rem; color:var(--text); line-height:1.5; }
 
     /* ── TOOLTIP CONTROLS BAR ── */
-    .tt-controls { display:flex; gap:8px; align-items:center; padding:9px 16px; border-bottom:1px solid rgba(255,215,0,0.1); flex-shrink:0; background:rgba(0,0,0,0.18); flex-wrap:wrap; }
-    .tt-ctrl-btn { background:transparent; border:1px solid rgba(255,215,0,0.32); color:var(--gold); font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.12em; padding:5px 13px; border-radius:3px; cursor:pointer; transition:background 0.15s,border-color 0.15s; white-space:nowrap; flex-shrink:0; }
-    .tt-ctrl-btn:hover { background:rgba(255,215,0,0.09); border-color:rgba(255,215,0,0.55); }
-    .tt-ctrl-select { background:#07090f; border:1px solid rgba(255,215,0,0.32); color:var(--text-mid); font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.06em; padding:5px 8px; border-radius:3px; cursor:pointer; flex:1; min-width:110px; }
-    .tt-ctrl-select:focus { outline:none; border-color:rgba(255,215,0,0.6); }
-    .tt-ctrl-label { font-family:var(--ff-mono); font-size:0.62rem; color:var(--text-dim); letter-spacing:0.14em; white-space:nowrap; }
-    @media(max-width:767px){ .tt-controls{padding:7px 12px;gap:6px} .tt-ctrl-btn{font-size:0.62rem;padding:4px 10px} .tt-ctrl-select{font-size:0.62rem} }
+    .tt-controls { display:flex; gap:8px; align-items:center; padding:9px 20px; border-bottom:1px solid rgba(255,215,0,0.1); flex-shrink:0; background:rgba(0,0,0,0.18); flex-wrap:wrap; }
+    .tt-ctrl-btn { display:inline-flex; align-items:center; justify-content:center; background:rgba(7,9,15,0.82); border:1px solid var(--gold); color:var(--gold); font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.15em; padding:5px 14px; border-radius:4px; cursor:pointer; text-transform:uppercase; position:relative; overflow:hidden; transition:color 0.25s,box-shadow 0.25s; white-space:nowrap; flex-shrink:0; }
+    .tt-ctrl-btn::before { content:''; position:absolute; inset:0; background:rgba(255,215,0,0.12); transform:translateX(-100%); transition:transform 0.3s ease; }
+    .tt-ctrl-btn:hover::before { transform:translateX(0); }
+    .tt-ctrl-btn:hover { box-shadow:0 0 14px rgba(255,215,0,0.35); }
+    @media(max-width:767px){ .tt-controls{padding:7px 12px;gap:6px} .tt-ctrl-btn{font-size:0.62rem;padding:4px 10px} }
 
     /* ── API SPINNER ── */
     #api-spinner { position:fixed; top:72px; left:50%; transform:translateX(-50%); z-index:500; display:flex; align-items:center; gap:8px; background:rgba(7,9,15,0.92); border:1px solid rgba(255,215,0,0.3); border-radius:20px; padding:6px 14px 6px 10px; font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.14em; color:var(--gold); pointer-events:none; }
@@ -1408,7 +1409,7 @@ function _buildDecadeChips(code, st, isFilms){
   const chips=decades.map(d=>
     `<button class="tt-cat-chip${active===d?' active':''}" onclick="filterTooltipDecade('${code}',${d})">${d}</button>`
   ).join('');
-  return `<div class="tt-cat-row"><div class="tt-cat-label">Anni</div>${all}${chips}</div>`;
+  return `<div class="tt-cat-row"><div class="tt-cat-label">Anni per decadi</div>${all}${chips}</div>`;
 }
 
 // ── Category chips (genre / movement / actor-type) ──
