@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<!-- LUMIÈRE — L'Atlante del Cinema Mondiale · © 2026 Christian Steiner -->
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lumière — L'Atlante del Cinema Mondiale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: #030407; }
+    :root {
+      --bg: #030407; --surface: #07090f; --surface2: #0a0d16;
+      --border: #131928; --border2: #1a2338;
+      --gold: #ffd700; --gold-dim: rgba(255,215,0,0.15);
+      --amber: #ff8c00; --cyan: #00e5ff; --blue: #3399ff;
+      --purple: #cc33ff; --teal: #00bbaa; --orange: #ff7700;
+      --text: #d8e2f8; --text-dim: #4a5a78; --text-mid: #8899bb;
+      --ff-mono: 'Share Tech Mono', monospace;
+      --ff-title: 'Rajdhani', sans-serif;
+      --ff-display: 'Bebas Neue', sans-serif;
+      --overlay-bg: rgba(3,4,7,0.85);
+      /* shared panel values */
+      --panel-bg: #07090f;
+      --panel-border: 1px solid rgba(255,215,0,0.3);
+      --panel-border-l: 3px solid var(--gold);
+      --panel-radius: 5px;
+      --panel-shadow: 0 24px 80px rgba(0,0,0,0.7),0 0 40px rgba(255,215,0,0.08);
+      --panel-scroll: rgba(255,215,0,0.3);
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--ff-title); height:100vh; height:100dvh; overflow:hidden; }
+    body::after { content:''; position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px); pointer-events:none; z-index:9999; }
+
+    /* ── HEADER ── */
+    header { position:fixed; top:0; left:0; right:0; height:64px; background:transparent; display:flex; align-items:stretch; justify-content:space-between; padding:12px 20px; z-index:1100; }
+    .logo { display:flex; align-items:center; gap:14px; }
+    .logo h1 { font-family:var(--ff-display); font-size:2.1rem; letter-spacing:0.06em; color:var(--gold); }
+    .logo .tagline { font-family:var(--ff-mono); font-size:0.58rem; color:var(--gold); opacity:0.65; letter-spacing:0.18em; text-transform:uppercase; }
+    .header-btns { display:flex; gap:8px; align-items:stretch; }
+    .mode-btn { opacity:0.45; transition:opacity 0.25s; }
+    .hdr-btn.mode-btn:hover, .update-btn.mode-btn:hover { opacity:0.75; }
+    .hdr-btn.mode-btn.active, .update-btn.mode-btn.active { opacity:1; }
+
+    /* Buttons — all share gold style */
+    .hdr-btn, .update-btn { display:flex; align-items:center; justify-content:center; background:rgba(7,9,15,0.82); backdrop-filter:blur(6px); border:1px solid var(--gold); color:var(--gold); font-family:var(--ff-mono); font-size:0.82rem; letter-spacing:0.18em; padding:0 18px; cursor:pointer; text-transform:uppercase; border-radius:5px; position:relative; overflow:hidden; transition:color 0.25s,box-shadow 0.25s; }
+    .hdr-btn::before, .update-btn::before, .edge-tab::before { content:''; position:absolute; inset:0; background:rgba(255,215,0,0.12); transform:translateX(-100%); transition:transform 0.3s ease; }
+    .hdr-btn:hover::before, .update-btn:hover::before, .edge-tab:hover::before { transform:translateX(0); }
+    .hdr-btn.active::before, .update-btn.active::before { transform:translateX(0); }
+    .hdr-btn:hover, .update-btn:hover, .hdr-btn.active, .update-btn.active { color:var(--gold); box-shadow:0 0 18px rgba(255,215,0,0.4); }
+    .view-sym::before { content:'◈'; }
+    .hdr-btn:hover .view-sym::before, .hdr-btn.active .view-sym::before { content:'◉'; }
+    .update-btn.loading { animation:btnLoadPulse 1.2s ease-in-out infinite; }
+    @keyframes btnLoadPulse { 0%,100%{box-shadow:0 0 8px rgba(255,215,0,0.25)} 50%{box-shadow:0 0 28px rgba(255,215,0,0.7)} }
+
+    /* ── MODALS ── */
+    .overlay { position:fixed; inset:0; background:var(--overlay-bg); backdrop-filter:blur(6px); z-index:2000; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.26s ease; }
+    .overlay.open { opacity:1; pointer-events:auto; }
+    /* Entry animation — tutti i pannelli overlay */
+    .overlay .modal, .overlay .genre-modal-sm { transform:translateY(-14px) scale(0.98); transition:transform 0.22s ease; }
+    .overlay.open .modal, .overlay.open .genre-modal-sm { transform:translateY(0) scale(1); }
+
+    /* Shared panel chrome: .modal, .genre-modal-sm, .left-panel, .right-panel, #tooltip.pinned */
+    .modal, .genre-modal-sm, .left-panel, .right-panel, #tooltip.pinned {
+      background:var(--panel-bg); border:var(--panel-border); border-left:var(--panel-border-l); border-radius:var(--panel-radius); box-shadow:var(--panel-shadow);
+    }
+
+    .modal { width:82vw; height:82vh; display:flex; flex-direction:column; }
+    .modal-header, #gm-header, #tooltip .tt-header { padding:16px 20px 14px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; }
+    .modal-title, #gm-title, #tooltip .tt-title { font-family:var(--ff-display); font-size:2.25rem; letter-spacing:0.08em; color:var(--gold); text-shadow:0 0 16px rgba(255,215,0,0.4); }
+    .modal-subtitle, #gm-count, #tooltip .tt-subtitle { font-family:var(--ff-mono); font-size:0.81rem; color:var(--text-dim); letter-spacing:0.18em; text-transform:uppercase; }
+    .modal-subtitle { margin-top:2px; }
+    #gm-title { margin-bottom:4px; }
+    #gm-count { padding:14px 20px 0; }
+    #tooltip .tt-title { margin-bottom:4px; }
+    .modal-close { background:transparent; border:1px solid var(--border2); color:var(--text-dim); font-family:var(--ff-mono); font-size:0.975rem; letter-spacing:0.12em; padding:5px 12px; border-radius:5px; cursor:pointer; flex-shrink:0; pointer-events:auto; transition:color 0.25s,border-color 0.25s,box-shadow 0.25s; }
+    .modal-close:hover { border-color:var(--gold); color:var(--gold); box-shadow:0 0 14px rgba(255,215,0,0.28); }
+
+    /* Shared scrollable body: .modal-body, #gm-list-wrap, #tooltip .tt-body */
+    .modal-body, #gm-list-wrap, #tooltip .tt-body { overflow-y:auto; padding:14px 20px 20px; flex:1; scrollbar-width:thin; scrollbar-color:var(--panel-scroll) transparent; }
+    .modal-body::-webkit-scrollbar, #gm-list-wrap::-webkit-scrollbar, #tooltip .tt-body::-webkit-scrollbar { width:3px; }
+    .modal-body::-webkit-scrollbar-track, #gm-list-wrap::-webkit-scrollbar-track { background:transparent; }
+    .modal-body::-webkit-scrollbar-thumb, #gm-list-wrap::-webkit-scrollbar-thumb, #tooltip .tt-body::-webkit-scrollbar-thumb { background:var(--panel-scroll); border-radius:2px; }
+
+    .modal-section-divider { border:none; border-top:1px solid var(--border2); margin:8px 0 22px; }
+    .app-description { margin-bottom:22px; }
+    .app-desc-text { font-family:var(--ff-title); font-size:1.23rem; color:var(--text-mid); line-height:1.6; }
+    .app-desc-text strong { color:var(--text); font-weight:600; }
+    .guide-item { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid rgba(26,35,56,0.5); }
+    .guide-item:last-child { border-bottom:none; }
+    .guide-icon { font-family:var(--ff-mono); font-size:1.125rem; color:var(--gold); flex-shrink:0; width:1.8em; text-align:center; margin-top:2px; }
+    .guide-info { flex:1; }
+    .guide-label { margin-bottom:3px; }
+    .guide-desc { font-family:var(--ff-title); font-size:1.23rem; color:var(--text-mid); line-height:1.5; }
+    .guide-desc strong { color:var(--text); }
+    .sources-category { margin-bottom:20px; }
+    .sources-cat-title { font-family:var(--ff-mono); font-size:0.81rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--gold); border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:10px; }
+    .source-item { display:flex; align-items:flex-start; gap:10px; padding:7px 0; border-bottom:1px solid rgba(26,35,56,0.5); }
+    .source-item:last-child { border-bottom:none; }
+    .source-dot { width:5px; height:5px; border-radius:50%; background:var(--gold); flex-shrink:0; margin-top:5px; }
+    .source-info { flex:1; }
+    .source-url { font-family:var(--ff-mono); font-size:0.81rem; color:var(--text-dim); letter-spacing:0.04em; }
+    .source-desc { font-family:var(--ff-title); font-size:1.23rem; color:var(--text-mid); margin-top:2px; line-height:1.5; }
+
+    /* Genre modal */
+    .genre-modal-sm { width:82vw; max-width:82vw; max-height:82vh; padding:0; display:flex; flex-direction:column; overflow:hidden; }
+    #gm-desc { font-family:var(--ff-title); font-size:1.23rem; color:var(--text-mid); line-height:1.6; padding:8px 20px 0; }
+    #gm-examples { font-family:var(--ff-mono); font-size:0.78rem; color:var(--text-dim); line-height:1.6; padding:10px 20px 0; border-top:none; }
+    #gm-list-wrap { margin-top:0; border-top:1px solid var(--border); min-height:0; }
+    .gm-list-label { font-family:var(--ff-mono); font-size:0.81rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--text-dim); margin-bottom:10px; }
+    .gm-row { display:grid; align-items:center; padding:7px 10px; border-bottom:1px solid rgba(255,255,255,0.045); cursor:default; transition:background 0.15s; border-radius:3px; }
+    .gm-row:last-child { border-bottom:none; }
+    .gm-row:hover { background:rgba(255,255,255,0.04); }
+    .gm-row-film, .gm-row-person { grid-template-columns:5rem 2fr 2rem 1.5fr; gap:14px; }
+    .gm-year { font-family:var(--ff-mono); font-size:1.65rem; color:var(--gold); opacity:0.8; }
+    .gm-name { font-family:var(--ff-title); font-size:1.43rem; color:var(--text-hi); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .gm-flag { font-size:1rem; text-align:center; }
+    .gm-sub  { font-family:var(--ff-mono); font-size:0.78rem; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* ── LEFT PANEL ── */
+    .left-panel { position:fixed; top:74px; left:10px; bottom:44px; width:300px; opacity:0; pointer-events:none; transform:translateX(-10px); transition:opacity 0.26s ease,transform 0.22s ease; z-index:200; overflow-y:auto; padding:14px 12px; display:flex; flex-direction:column; gap:16px; }
+    .left-panel.open { opacity:1; pointer-events:auto; transform:translateX(0); }
+    .panel-title { font-family:var(--ff-mono); font-size:0.87rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px; }
+    .legend-item { display:flex; align-items:center; gap:9px; padding:3px 5px; cursor:pointer; border-radius:2px; transition:background 0.2s,color 0.2s; margin-bottom:4px; position:relative; }
+    .legend-item:hover, .legend-item.active { background:rgba(255,255,255,0.04); color:var(--gold); }
+    .legend-item:hover .legend-text, .legend-item.active .legend-text { color:var(--gold); }
+    .legend-text { font-size:1.14rem; color:var(--text); line-height:1; transition:color 0.2s; }
+    .legend-count { font-size:0.93rem; color:var(--text-dim); margin-left:auto; font-family:var(--ff-mono); }
+    .filter-group { display:flex; flex-direction:column; gap:4px; }
+    .filter-btn { background:transparent; border:1px solid var(--border2); color:var(--text-dim); font-family:var(--ff-mono); font-size:0.84rem; letter-spacing:0.06em; padding:5px 10px; cursor:pointer; text-transform:uppercase; border-radius:4px; position:relative; overflow:hidden; transition:color 0.2s,border-color 0.2s,box-shadow 0.2s; text-align:left; }
+    .filter-btn::before { content:''; position:absolute; inset:0; background:rgba(255,215,0,0.10); transform:translateX(-100%); transition:transform 0.3s ease; }
+    .filter-btn:hover::before, .filter-btn.active::before { transform:translateX(0); }
+    .filter-btn:hover, .filter-btn.active { border-color:var(--gold); color:var(--gold); }
+
+    /* ── CANVAS ── */
+    .canvas-wrapper { position:fixed; top:64px; left:0; right:0; bottom:34px; z-index:0; overflow:hidden; }
+    #lumiere-canvas { position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair; }
+
+    /* ── RIGHT PANEL ── */
+    .right-panel { position:fixed; top:74px; right:10px; bottom:44px; width:300px; opacity:0; pointer-events:none; transform:translateX(10px); transition:opacity 0.26s ease,transform 0.22s ease; z-index:200; overflow-y:auto; padding:14px 12px; display:flex; flex-direction:column; gap:7px; }
+    .right-panel.open { opacity:1; pointer-events:auto; transform:translateX(0); }
+    .country-card { border:1px solid var(--border); padding:10px 12px 10px 14px; border-radius:5px; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; background:rgba(255,255,255,0.01); display:flex; flex-direction:column; gap:4px; min-height:58px; }
+    .country-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
+    .cc-europe::before  { background:var(--cyan); }
+    .cc-americas::before { background:#ffcc00; }
+    .cc-asia::before    { background:var(--purple); }
+    .cc-africa::before  { background:var(--orange); }
+    .cc-oceania::before { background:var(--teal); }
+    .country-card:hover { border-color:rgba(255,215,0,0.35); background:rgba(255,215,0,0.03); }
+    .country-card.active { border-color:var(--gold); background:rgba(255,215,0,0.06); }
+    .cc-name { font-family:var(--ff-title); font-weight:700; font-size:1.35rem; color:var(--text); line-height:1.25; }
+    .cc-meta { font-family:var(--ff-mono); font-size:0.81rem; color:var(--text-dim); }
+    /* Shared progress bar base */
+    .cc-bar, .nation-bar { height:2px; background:var(--border); border-radius:1px; overflow:hidden; }
+    .nation-bar { width:100%; margin-top:3px; }
+    .cc-fill, .nation-fill { height:100%; border-radius:1px; transition:width 0.6s ease; }
+    .nation-fill { background:linear-gradient(90deg,#7b5600,#ffcc00); }
+
+    /* ── FOOTER ── */
+    footer { position:fixed; bottom:0; left:0; right:0; height:34px; background:transparent; padding:0 20px; display:flex; justify-content:space-between; align-items:center; font-family:var(--ff-mono); font-size:0.58rem; color:var(--gold); opacity:0.65; text-shadow:0 0 8px rgba(0,0,0,0.9); z-index:1100; }
+    .status-dot { width:5px; height:5px; border-radius:50%; background:var(--gold); display:inline-block; margin-right:6px; animation:blink 2.2s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+
+    /* ── TOOLTIP OVERLAY & PINNED ── */
+    #tt-overlay { position:fixed; inset:0; background:var(--overlay-bg); backdrop-filter:blur(6px); z-index:2200; display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; pointer-events:none; transition:opacity 0.26s ease; }
+    #tt-overlay.active { opacity:1; pointer-events:auto; }
+    #tooltip { position:fixed; background:rgba(7,9,15,0.97); border:1px solid rgba(255,215,0,0.3); border-left:3px solid var(--gold); padding:0.75em 1.1em; font-family:var(--ff-mono); font-size:20px; color:var(--text); pointer-events:none; z-index:1000; width:340px; max-height:70vh; overflow-y:auto; border-radius:5px; box-shadow:0 8px 32px rgba(0,0,0,0.6); opacity:0; transform:scale(0.88) translateY(6px); transform-origin:top left; transition:opacity 0.18s ease,transform 0.22s cubic-bezier(0.34,1.48,0.64,1); visibility:hidden; }
+    #tooltip.tt-vis { opacity:1; transform:scale(1) translateY(0); visibility:visible; }
+    #tooltip.pinned { position:fixed; inset:0; margin:auto; width:82vw; height:82vh; max-height:82vh; padding:0; overflow:hidden; display:flex; flex-direction:column; transform-origin:center top; pointer-events:auto; cursor:default; z-index:2300; transition:opacity 0.22s ease,transform 0.22s ease; }
+    #tooltip.pinned:not(.tt-vis) { opacity:0; transform:translateY(-14px) scale(0.98); }
+    #tooltip.pinned.tt-vis { opacity:1; transform:translateY(0) scale(1); }
+    /* .tt-close unificato in .modal-close */
+    #tooltip .tt-body { min-height:0; }
+
+    /* Film & Actor cards in tooltip */
+    .film-card, .actor-card { display:flex; flex-direction:column; border-bottom:1px solid rgba(26,35,56,0.55); }
+    .film-card { gap:6px; padding:14px 0; }
+    .film-card:last-child, .actor-card:last-child { border-bottom:none; }
+    .actor-card { gap:4px; padding:12px 0; }
+    .film-year { font-family:var(--ff-display); font-size:1.65rem; color:var(--gold); display:block; margin-bottom:2px; }
+    .film-info { }
+    .film-title, .actor-name, .source-name, .guide-label { font-family:var(--ff-title); font-weight:700; font-size:1.43rem; color:var(--text); }
+    .film-title { margin-bottom:4px; }
+    .actor-name { margin-bottom:2px; }
+    .film-it-title { font-weight:400; font-size:1.1rem; color:var(--text-dim); }
+    .gm-it-title { font-size:0.9em; color:var(--text-dim); font-weight:400; }
+    .film-meta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; align-items:center; }
+    .film-genre-tag { font-family:var(--ff-mono); font-size:0.75rem; letter-spacing:0.08em; padding:2px 6px; border-radius:2px; text-transform:uppercase; border:1px solid; }
+    .film-dir, .film-actors-line, .actor-films-line { font-family:var(--ff-mono); color:var(--text-dim); letter-spacing:0.04em; }
+    .film-dir { font-size:0.81rem; }
+    .film-actors-line, .actor-films-line { font-size:0.78rem; }
+    .actor-films-line { margin-top:3px; }
+    .film-synopsis, .actor-bio { font-family:var(--ff-title); font-size:1.23rem; color:var(--text-mid); line-height:1.5; }
+    .film-synopsis { margin-bottom:4px; }
+    .actor-info { }
+    .actor-years { font-family:var(--ff-display); font-size:1.28rem; color:var(--gold); margin-bottom:4px; }
+    .card-links { display:flex; gap:12px; flex-wrap:wrap; margin-top:6px; }
+    .card-source-link { display:inline-flex; align-items:center; gap:3px; color:var(--gold); opacity:0.55; font-size:0.72rem; font-family:var(--ff-mono); letter-spacing:0.06em; text-decoration:none; transition:opacity 0.18s; }
+    .card-source-link:hover, .card-trailer-link:hover { opacity:1; text-decoration:underline; }
+    .card-source-link svg { width:10px; height:10px; flex-shrink:0; }
+    .card-trailer-link { color:#ff4444; }
+
+    /* Genre color tags */
+    .film-genre-tag { color:#ffcc00 !important; border-color:rgba(255,204,0,0.3) !important; background:rgba(255,204,0,0.08) !important; }
+
+    /* ── FLASH ── */
+    .flash { position:fixed; bottom:52px; left:50%; transform:translateX(-50%) translateY(8px); background:rgba(7,9,15,0.97); border:1px solid var(--gold); border-left:3px solid var(--gold); color:var(--text); font-family:var(--ff-mono); font-size:0.68rem; padding:10px 18px; z-index:500; border-radius:4px; box-shadow:0 0 25px rgba(255,215,0,0.15); animation:flashIn 4s forwards; }
+    @keyframes flashIn { 0%{opacity:0;transform:translateX(-50%) translateY(12px)} 12%{opacity:1;transform:translateX(-50%) translateY(0)} 75%{opacity:1} 100%{opacity:0;transform:translateX(-50%) translateY(-4px)} }
+
+    /* ── EDGE TABS ── */
+    .edge-tab { position:fixed; top:calc(64px + (100vh - 64px - 34px) / 2); transform:translateY(-50%); z-index:210; display:flex; align-items:center; justify-content:center; background:rgba(7,9,15,0.82); backdrop-filter:blur(6px); border:1px solid var(--gold); color:var(--gold); font-size:1.1rem; cursor:pointer; border-radius:5px; overflow:hidden; width:38px; height:38px; transition:color 0.25s,box-shadow 0.25s; }
+    .edge-tab:hover { color:#fff; box-shadow:0 0 18px rgba(255,215,0,0.4); }
+    #edge-left.active, #edge-right.active { opacity:0; pointer-events:none; transition:opacity 0.2s ease; }
+    #edge-left { left:10px; }
+    #edge-right { right:10px; }
+    @media(max-width:767px) { .edge-tab { top:calc(52px + (100vh - 52px - 28px) / 2); width:34px; height:34px; font-size:0.95rem; } }
+    @media(max-width:479px) { .edge-tab { top:calc(46px + (100vh - 46px - 28px) / 2); width:32px; height:32px; font-size:0.88rem; } }
+
+    /* ── PANEL OVERLAY ── */
+    #panel-overlay { position:fixed; inset:0; background:rgba(3,4,7,0.68); z-index:195; cursor:pointer; opacity:0; pointer-events:none; transition:opacity 0.26s ease; }
+    #panel-overlay.active { opacity:1; pointer-events:auto; }
+
+    /* ── ZOOM HINT ── */
+    #zoom-hint { position:fixed; bottom:46px; left:50%; transform:translateX(-50%) translateY(8px); background:rgba(7,9,15,0.90); border:1px solid rgba(255,215,0,0.28); color:var(--text-mid); font-family:var(--ff-mono); font-size:0.64rem; letter-spacing:0.10em; padding:5px 14px; border-radius:3px; pointer-events:none; z-index:320; opacity:0; transition:opacity 0.28s ease,transform 0.28s ease; }
+    #zoom-hint.vis { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:1099px) { .hdr-btn,.update-btn{font-size:0.82rem} footer{font-size:0.65rem} #tooltip{width:300px} .tt-title{font-size:1.95rem} .tt-subtitle{font-size:0.70rem} .film-year{font-size:1.43rem} .film-title{font-size:1.24rem} .film-genre-tag{font-size:0.65rem} .film-dir{font-size:0.70rem} .film-synopsis{font-size:1.07rem} .film-actors-line{font-size:0.68rem} .actor-name{font-size:1.24rem} .actor-years{font-size:1.11rem} .actor-bio{font-size:1.07rem} .actor-films-line{font-size:0.68rem} .panel-title{font-size:0.75rem} .legend-text{font-size:0.99rem} .legend-count{font-size:0.81rem} .filter-btn{font-size:0.73rem} .cc-name{font-size:1.17rem} .cc-meta{font-size:0.70rem} .modal-title{font-size:2rem} .modal-subtitle{font-size:0.75rem} .modal-close{font-size:0.845rem} .app-desc-text{font-size:1.3rem} .guide-label{font-size:1.17rem} .guide-desc{font-size:1.17rem} .guide-icon{font-size:0.975rem} .sources-cat-title{font-size:0.75rem} .source-name{font-size:1.17rem} .source-url{font-size:0.73rem} .source-desc{font-size:1.105rem} #gm-desc{font-size:1.07rem} #gm-examples{font-size:0.68rem} .gm-list-label{font-size:0.70rem} .gm-name{font-size:1.24rem} .gm-sub{font-size:0.68rem} .gm-year{font-size:1.43rem} }
+    @media(max-width:767px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .logo .tagline{display:none} .mode-num{display:none} #updateBtn{display:none} .hdr-btn,.update-btn{height:1.9rem;font-size:0.74rem;padding:0 12px;letter-spacing:0.12em} .left-panel,.right-panel{top:62px;bottom:38px;width:268px} footer{height:28px;font-size:0.66rem;padding:0 12px} .footer-status{display:none} .canvas-wrapper{top:52px;bottom:28px} #tooltip{width:min(300px,90vw)} }
+    @media(max-width:479px) { header{height:46px;padding:6px 8px;align-items:center} .logo h1{font-size:1.35rem} .mode-num{display:none} .left-panel,.right-panel{width:min(290px,90vw);top:56px;bottom:38px} .hdr-btn,.update-btn{height:1.35rem;padding:0 8px;font-size:0.70rem;letter-spacing:0.08em} footer{height:28px;padding:0 10px} .footer-status{display:none} .canvas-wrapper{top:46px;bottom:28px} #tooltip{width:min(290px,92vw)} }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:var(--surface)} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px} ::-webkit-scrollbar-thumb:hover{background:rgba(255,215,0,0.35)}
+    .sources-desc { font-family:var(--ff-title); font-size:1.5rem; color:var(--text); line-height:1.5; }
+
+    /* ── API SPINNER ── */
+    #api-spinner { position:fixed; top:72px; left:50%; transform:translateX(-50%); z-index:500; display:flex; align-items:center; gap:8px; background:rgba(7,9,15,0.92); border:1px solid rgba(255,215,0,0.3); border-radius:20px; padding:6px 14px 6px 10px; font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.14em; color:var(--gold); pointer-events:none; }
+    .spinner-ring { width:14px; height:14px; border:2px solid rgba(255,215,0,0.2); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* ── TOOLTIP LOADING STATE ── */
+    .tt-loading { display:flex; align-items:center; gap:12px; padding:24px 0; color:var(--text-dim); font-family:var(--ff-mono); font-size:0.88rem; letter-spacing:0.08em; }
+    .tt-spinner { width:18px; height:18px; border:2px solid rgba(255,215,0,0.2); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">
+    <div>
+      <h1>LUMIÈRE</h1>
+      <div class="tagline">L'Atlante del Cinema Mondiale · Dal 28 Dicembre 1895</div>
+    </div>
+  </div>
+  <div class="header-btns">
+    <button class="hdr-btn mode-btn active" id="mode-stat-films" onclick="setViewMode('films')">Film<span class="mode-num" id="stat-films"> – 0</span></button>
+    <button class="hdr-btn mode-btn" id="mode-stat-directors" onclick="setViewMode('directors')">Registi<span class="mode-num" id="stat-directors"> – 0</span></button>
+    <button class="hdr-btn mode-btn" id="mode-stat-actors" onclick="setViewMode('actors')">Attori<span class="mode-num" id="stat-actors"> – 0</span></button>
+    <button class="hdr-btn mode-btn" id="guideBtn" onclick="openGuide()">GUIDA</button>
+    <button class="update-btn mode-btn" id="updateBtn" onclick="updateData()">AGGIORNA</button>
+  </div>
+</header>
+
+<!-- ── GUIDE MODAL ── -->
+<div class="overlay" id="guide-overlay" onclick="if(event.target===this)closeGuide()">
+  <div class="modal">
+    <div class="modal-header">
+      <div><div class="modal-title">GUIDA</div><div class="modal-subtitle">LUMIÈRE — L'Atlante del Cinema Mondiale</div></div>
+      <button class="modal-close" onclick="closeGuide()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="app-description">
+        <div class="app-desc-text"><strong>Lumière</strong> è un atlante interattivo del cinema mondiale. Il mosaico visualizza le nazioni produttrici di cinema dalla nascita della settima arte (<strong>28 dicembre 1895</strong>) ai giorni nostri: ogni tessera rappresenta uno stato, la cui dimensione è proporzionale alla quantità di film, registi o attori presenti nel database.</div>
+      </div>
+      <hr class="modal-section-divider">
+      <div class="sources-category">
+        <div class="modal-title" style="margin-bottom:12px">Utilizzo</div>
+        <div class="guide-item"><span class="guide-icon">▦</span><div class="guide-info"><div class="guide-label">Il Mosaico</div><div class="guide-desc">Ogni <strong>tessera</strong> rappresenta una nazione. La sua dimensione è proporzionale al numero di film, registi o attori nella modalità attiva. Le tessere sono raggruppate in colonne geografiche (Americhe, Europa Ovest, Europa Centrale, Europa Est, Asia Ovest, Asia Est).</div></div></div>
+        <div class="guide-item"><span class="guide-icon">⊙</span><div class="guide-info"><div class="guide-label">Hover &amp; Animazione Automatica</div><div class="guide-desc">Passando il cursore su una tessera, questa si espande in altezza e <strong>l'intera colonna si allarga</strong> insieme. Al lancio del sito — e dopo <strong>2 secondi di inattività</strong> — parte un'animazione automatica che scorre casualmente le tessere con un ingrandimento doppio rispetto all'hover manuale. L'animazione si interrompe non appena si muove il cursore o si tocca lo schermo.</div></div></div>
+        <div class="guide-item"><span class="guide-icon">◉</span><div class="guide-info"><div class="guide-label">Click — Pannello Dettaglio</div><div class="guide-desc">Un click su una tessera apre il pannello con la lista completa di <strong>film</strong> (dal più recente al più antico), <strong>registi</strong> o <strong>attori</strong> (dal più giovane al più anziano) della nazione. Ogni scheda film mostra anno, titolo, genere, regia, sinossi, cast e due link: <strong>Wikipedia</strong> (icona ↗) e <strong>Trailer</strong> (icona ▶) che si aprono in una nuova scheda. Per registi e attori è presente il link Wikipedia. Chiudi con <strong>✕</strong> o cliccando fuori.</div></div></div>
+        <div class="guide-item"><span class="guide-icon">◈</span><div class="guide-info"><div class="guide-label">Modalità — Film · Registi · Attori</div><div class="guide-desc">L'header presenta tre modalità selezionabili: <strong>Film</strong>, <strong>Registi</strong>, <strong>Attori</strong>. Ogni modalità ridimensiona le tessere, aggiorna il pannello sinistra con la tassonomia relativa e adatta il contenuto dei pannelli dettaglio. Il numero su ogni tessera riflette sempre la quantità nella modalità corrente.</div></div></div>
+        <div class="guide-item"><span class="guide-icon">▤</span><div class="guide-info"><div class="guide-label">Pannello Sinistra — Categorie</div><div class="guide-desc">Mostra <strong>Generi di Film</strong>, <strong>Movimenti Cinematografici</strong> o <strong>Tipologie di Attori</strong> in base alla modalità attiva. Cliccando su una voce si apre una scheda con descrizione della categoria e la <strong>lista completa</strong> (scrollabile) di tutti i film, registi o attori appartenenti a quella categoria, ordinati cronologicamente. I <strong>filtri</strong> sotto la lista oscurano le tessere non pertinenti. Pannello aperto/chiuso con la tab laterale o cliccando fuori.</div></div></div>
+        <div class="guide-item"><span class="guide-icon">▥</span><div class="guide-info"><div class="guide-label">Pannello Destra — Nazioni</div><div class="guide-desc">Lista di tutte le nazioni ordinate per numero di elementi (film, registi o attori) nella modalità corrente. Passare il cursore su una nazione nella lista anima la tessera corrispondente. Cliccando si apre lo stesso pannello dettagliato.</div></div></div>
+        <div class="guide-item"><span class="guide-icon">⤢</span><div class="guide-info"><div class="guide-label">Navigazione</div><div class="guide-desc"><strong>Scroll / Pinch</strong>: zoom. <strong>Drag</strong>: sposta la vista. <strong>Doppio click</strong> su tessera: zoom centrato sulla nazione. <strong>Doppio click</strong> su area vuota: reimposta la vista.</div></div></div>
+        <div class="guide-item"><span class="guide-icon">↺</span><div class="guide-info"><div class="guide-label">Bottone AGGIORNA</div><div class="guide-desc">Simula la sincronizzazione con i database cinematografici (IMDb, TMDB) e aggiorna la data dell'ultimo aggiornamento nel footer.</div></div></div>
+      </div>
+      <hr class="modal-section-divider">
+      <div class="sources-category">
+        <div class="modal-title" style="margin-bottom:12px">Fonti &amp; Riferimenti</div>
+        <div class="sources-cat-title">Database Cinematografici</div>
+        <div class="source-item"><div class="source-dot"></div><div class="source-info"><div class="source-name">IMDb — Internet Movie Database</div><div class="source-url">imdb.com</div><div class="source-desc">Principale database mondiale di film, serie e attori. Fonte per filmografia, cast e dettagli tecnici.</div></div></div>
+        <div class="source-item"><div class="source-dot"></div><div class="source-info"><div class="source-name">The Movie Database (TMDB)</div><div class="source-url">themoviedb.org</div><div class="source-desc">Database collaborativo con API pubblica. Fonte per metadati e informazioni di produzione.</div></div></div>
+        <div class="source-item"><div class="source-dot"></div><div class="source-info"><div class="source-name">Sight &amp; Sound — BFI</div><div class="source-url">bfi.org.uk/sight-and-sound</div><div class="source-desc">Rivista del British Film Institute. Fonte per le classifiche storiche dei migliori film.</div></div></div>
+        <div class="source-item"><div class="source-dot"></div><div class="source-info"><div class="source-name">Cinémathèque française</div><div class="source-url">cinematheque.fr</div><div class="source-desc">Archivio cinematografico francese. Fonte per il cinema delle origini e il patrimonio europeo.</div></div></div>
+        <div class="source-item"><div class="source-dot"></div><div class="source-info"><div class="source-name">AlloCiné</div><div class="source-url">allocine.fr</div><div class="source-desc">Database francese. Fonte per il cinema europeo e francofono.</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── GENRE MODAL ── -->
+<div class="overlay" id="genre-overlay" onclick="if(event.target===this)closeGenreModal()" style="z-index:2100">
+  <div class="genre-modal-sm">
+    <div id="gm-header"><div id="gm-title"></div><button class="modal-close" onclick="closeGenreModal()" style="margin-left:16px">✕</button></div>
+    <div id="gm-count"></div>
+    <div id="gm-desc"></div>
+    <div id="gm-examples"></div>
+    <div id="gm-list-wrap"><div class="gm-list-label" id="gm-list-label"></div><div id="gm-list"></div></div>
+  </div>
+</div>
+
+<!-- ── EDGE TABS ── -->
+<div id="edge-left" class="edge-tab" onclick="togglePanel('left')" title="Generi">▤</div>
+<div id="edge-right" class="edge-tab" onclick="togglePanel('right')" title="Nazioni">▥</div>
+
+<!-- ── LEFT PANEL ── -->
+<div class="left-panel" id="leftPanel">
+  <div><div class="panel-title" id="lp-title">Genere di Film</div><div id="genre-list"></div></div>
+  <div><div class="panel-title" id="lp-filter-title">Filtra per Genere</div><div class="filter-group" id="genre-filters"></div></div>
+</div>
+
+<!-- ── CANVAS ── -->
+<div class="canvas-wrapper"><canvas id="lumiere-canvas"></canvas></div>
+
+<!-- ── RIGHT PANEL ── -->
+<div class="right-panel" id="rightPanel">
+  <div class="panel-title" id="rp-title">Nazioni</div>
+  <div id="country-list"></div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-status"><span class="status-dot"></span>DATABASE ATTIVO — AGGIORNAMENTO CONTINUO</div>
+  <div id="last-update">CARICAMENTO IN CORSO...</div>
+  <div>LUMIÈRE v1.0 · <span>© <span id="footer-year">2026</span> Christian Steiner</span></div>
+</footer>
+
+<div id="panel-overlay" onclick="closeAllPanels()"></div>
+<div id="zoom-hint">SCORRI O PIZZICA PER NAVIGARE · DOPPIO CLICK PER RESET</div>
+<div id="tt-overlay" onclick="if(event.target===this)closePinnedTooltip()"></div>
+<div id="tooltip"></div>
+
+<!-- API loading spinner (top-center, shown during TMDB fetches) -->
+<div id="api-spinner" style="display:none">
+  <div class="spinner-ring"></div>
+  <span>TMDB</span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════
+
+const GENRE_DEFS = {
+  'Azione':       { color:'#ff5500', desc:'Film caratterizzati da sequenze di combattimento, inseguimenti, esplosioni e ritmo serrato. Mettono il protagonista di fronte a pericoli fisici estremi.', examples:['Die Hard','Mad Max','The Dark Knight'] },
+  'Animazione':   { color:'#00e5ff', desc:'Opere realizzate fotogramma per fotogramma tramite disegni, modelli 3D o stop-motion. Spaziano dalla favola al dramma adulto.', examples:['Spirited Away','Toy Story','Akira'] },
+  'Avventura':    { color:'#44cc88', desc:'Viaggi verso l\'ignoto, esplorazioni e imprese eroiche in luoghi esotici. L\'accento è sul percorso più che sul conflitto fisico.', examples:['Lawrence of Arabia','The Lord of the Rings','Raiders of the Lost Ark'] },
+  'Commedia':     { color:'#ffcc00', desc:'Film progettati per far ridere tramite situazioni assurde, dialoghi brillanti o personaggi comici. Spesso nasconde critica sociale.', examples:['Some Like It Hot','Amélie','The Great Dictator'] },
+  'Documentario': { color:'#00bbaa', desc:'Registrazione della realtà con intento informativo o artistico. Dal reportage giornalistico al cinema di osservazione poetico.', examples:['Man with a Movie Camera','Shoah','Bowling for Columbine'] },
+  'Drammatico':   { color:'#3399ff', desc:'Genere centrale del cinema, esplora conflitti umani profondi, relazioni e trasformazioni interiori con tono serio e realistico.', examples:['Citizen Kane','Bicycle Thieves','Parasite'] },
+  'Fantascienza':  { color:'#cc33ff', desc:'Speculazione su scienza e tecnologia futura: viaggi spaziali, intelligenza artificiale, distopie, alieni e alterazioni della realtà.', examples:['2001: A Space Odyssey','Blade Runner','Metropolis'] },
+  'Fantasy':      { color:'#9966ff', desc:'Mondi immaginari con magia, creature mitologiche e leggi fisiche alternative. Spesso fonde epica eroica e fiaba.', examples:['The Wizard of Oz','Pan\'s Labyrinth','The Lord of the Rings'] },
+  'Guerra':       { color:'#8899bb', desc:'Rappresentazione del conflitto armato in tutte le sue sfaccettature: eroismo, trauma, fratellanza e orrore della violenza.', examples:['Apocalypse Now','Come and See','Dunkirk'] },
+  'Horror':       { color:'#ff2233', desc:'Film progettati per suscitare paura attraverso suspense, shock visivo o minacce soprannaturali. Riflette le angosce culturali di un\'epoca.', examples:['Nosferatu','Psycho','The Babadook'] },
+  'Musical':      { color:'#ff9900', desc:'Storie raccontate in parte tramite canzoni e danze. Dalla commedia musicale di Broadway all\'epopea romantica.', examples:['Singin\' in the Rain','La La Land','The Umbrellas of Cherbourg'] },
+  'Romantico':    { color:'#ff6699', desc:'Storie d\'amore e relazioni sentimentali al centro della narrazione. Può fondersi con commedia, dramma o thriller.', examples:['Casablanca','Brief Encounter','Portrait of a Lady on Fire'] },
+  'Storico':      { color:'#aa8800', desc:'Ricostruzione di eventi o epoche del passato con accuratezza scenografica. Può includere figure reali o fictionali in contesti autentici.', examples:['Cabiria','Schindler\'s List','The Last Emperor'] },
+  'Thriller':     { color:'#ff4455', desc:'Tensione e suspense dominano la narrazione. Il protagonista fronteggia pericoli occulti, intrighi o cacce all\'uomo psicologicamente intense.', examples:['Rear Window','Chinatown','No Country for Old Men'] },
+  'Western':      { color:'#ff7700', desc:'L\'epopea della frontiera americana (o italiana). Paesaggi aridi, sceriffi e fuorilegge, codice d\'onore e pistole.', examples:['The Great Train Robbery','The Good, the Bad and the Ugly','Once Upon a Time in the West'] }
+};
+
+const COUNTRIES = {
+  'FR': { name:'Francia',         flag:'🇫🇷', continent:'europe',   lon:2,    lat:46,   rgb:'0,229,255' },
+  'US': { name:'Stati Uniti',     flag:'🇺🇸', continent:'americas', lon:-98,  lat:38,   rgb:'255,204,0' },
+  'IT': { name:'Italia',          flag:'🇮🇹', continent:'europe',   lon:12,   lat:42,   rgb:'0,229,255' },
+  'GB': { name:'Regno Unito',     flag:'🇬🇧', continent:'europe',   lon:-2,   lat:54,   rgb:'0,229,255' },
+  'DE': { name:'Germania',        flag:'🇩🇪', continent:'europe',   lon:10,   lat:51,   rgb:'0,229,255' },
+  'JP': { name:'Giappone',        flag:'🇯🇵', continent:'asia',     lon:138,  lat:36,   rgb:'204,51,255' },
+  'SE': { name:'Svezia',          flag:'🇸🇪', continent:'europe',   lon:18,   lat:60,   rgb:'0,229,255' },
+  'RU': { name:'Russia/URSS',     flag:'🇷🇺', continent:'europe',   lon:60,   lat:60,   rgb:'0,229,255' },
+  'IN': { name:'India',           flag:'🇮🇳', continent:'asia',     lon:79,   lat:20,   rgb:'204,51,255' },
+  'KR': { name:'Corea del Sud',   flag:'🇰🇷', continent:'asia',     lon:128,  lat:37,   rgb:'204,51,255' },
+  'ES': { name:'Spagna',          flag:'🇪🇸', continent:'europe',   lon:-4,   lat:40,   rgb:'0,229,255' },
+  'PL': { name:'Polonia',         flag:'🇵🇱', continent:'europe',   lon:20,   lat:52,   rgb:'0,229,255' },
+  'DK': { name:'Danimarca',       flag:'🇩🇰', continent:'europe',   lon:10,   lat:56,   rgb:'0,229,255' },
+  'AT': { name:'Austria',         flag:'🇦🇹', continent:'europe',   lon:14,   lat:47,   rgb:'0,229,255' },
+  'BR': { name:'Brasile',         flag:'🇧🇷', continent:'americas', lon:-51,  lat:-14,  rgb:'255,204,0' },
+  'MX': { name:'Messico',         flag:'🇲🇽', continent:'americas', lon:-102, lat:23,   rgb:'255,204,0' },
+  'CN': { name:'Cina',            flag:'🇨🇳', continent:'asia',     lon:104,  lat:35,   rgb:'204,51,255' },
+  'AR': { name:'Argentina',       flag:'🇦🇷', continent:'americas', lon:-64,  lat:-34,  rgb:'255,204,0' },
+  'AU': { name:'Australia',       flag:'🇦🇺', continent:'oceania',  lon:133,  lat:-27,  rgb:'0,187,170' },
+  'BE': { name:'Belgio',          flag:'🇧🇪', continent:'europe',   lon:4,    lat:51,   rgb:'0,229,255' },
+  'IR': { name:'Iran',            flag:'🇮🇷', continent:'asia',     lon:53,   lat:33,   rgb:'204,51,255' },
+  'NO': { name:'Norvegia',        flag:'🇳🇴', continent:'europe',   lon:10,   lat:62,   rgb:'0,229,255' },
+  'HU': { name:'Ungheria',        flag:'🇭🇺', continent:'europe',   lon:19,   lat:47,   rgb:'0,229,255' },
+  'NZ': { name:'Nuova Zelanda',   flag:'🇳🇿', continent:'oceania',  lon:172,  lat:-41,  rgb:'0,187,170' },
+  'IE': { name:'Irlanda',         flag:'🇮🇪', continent:'europe',   lon:-8,   lat:53,   rgb:'0,229,255' },
+  'TW': { name:'Taiwan',          flag:'🇹🇼', continent:'asia',     lon:121,  lat:24,   rgb:'204,51,255' },
+  'CZ': { name:'Rep. Ceca',       flag:'🇨🇿', continent:'europe',   lon:15,   lat:50,   rgb:'0,229,255' },
+  'CA': { name:'Canada',          flag:'🇨🇦', continent:'americas', lon:-96,  lat:60,   rgb:'255,204,0' },
+  'PT': { name:'Portogallo',      flag:'🇵🇹', continent:'europe',   lon:-8,   lat:39,   rgb:'0,229,255' },
+  'RO': { name:'Romania',         flag:'🇷🇴', continent:'europe',   lon:25,   lat:45,   rgb:'0,229,255' },
+  'HK': { name:'Hong Kong',       flag:'🇭🇰', continent:'asia',     lon:114,  lat:22,   rgb:'204,51,255' }
+};
+
+
+// ═══════════════════════════════════════════════════════
+// TMDB API — DYNAMIC DATA
+// ═══════════════════════════════════════════════════════
+// All calls go through the /api/* Vercel serverless proxy.
+// The TMDB key is NEVER stored client-side.
+const API_BASE = '/api';
+
+// ── localStorage cache helpers ──────────────────────────
+const CACHE_TTL_STATS = 24 * 60 * 60 * 1000;  // 24 h  (stats)
+const CACHE_TTL_DATA  =  1 * 60 * 60 * 1000;  //  1 h  (films / people)
+
+function cacheGet(key) {
+  try {
+    const raw = localStorage.getItem('lum_' + key);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw);
+    const ttl = key.startsWith('stats') ? CACHE_TTL_STATS : CACHE_TTL_DATA;
+    if (Date.now() - ts > ttl) { localStorage.removeItem('lum_' + key); return null; }
+    return data;
+  } catch { return null; }
+}
+function cacheSet(key, data) {
+  try { localStorage.setItem('lum_' + key, JSON.stringify({ ts: Date.now(), data })); } catch {}
+}
+function cacheClear() {
+  Object.keys(localStorage).filter(k=>k.startsWith('lum_')).forEach(k=>localStorage.removeItem(k));
+}
+
+// ── Runtime counters ────────────────────────────────────
+// COUNTRY_STATS — populated at startup from /api/stats
+// Shape: { XX: { films: N, directors: N, actors: N }, … }
+let COUNTRY_STATS = {};
+let maxFilmCount = 1, maxActorCount = 1, maxDirectorCount = 1;
+
+// Per-country data (populated lazily on first click)
+const COUNTRY_FILMS     = {};   // { XX: [filmObj, …] }
+const COUNTRY_DIRECTORS = {};   // { XX: [personObj, …] }
+const COUNTRY_ACTORS    = {};   // { XX: [personObj, …] }
+
+// Flat arrays for category modal (grow as countries load)
+let LOADED_FILMS     = [];
+let LOADED_DIRECTORS = [];
+let LOADED_ACTORS    = [];
+
+// ── Spinner ─────────────────────────────────────────────
+function showSpinner(on) {
+  const el = document.getElementById('api-spinner');
+  if (el) el.style.display = on ? 'flex' : 'none';
+}
+
+// ── Stats fetch — called once at startup ─────────────────
+async function initStats() {
+  const cached = cacheGet('stats');
+  if (cached && Object.keys(cached).length > 5) {
+    COUNTRY_STATS = cached;
+    _applyStats();
+    return;
+  }
+  try {
+    showSpinner(true);
+    const res = await fetch(API_BASE + '/stats');
+    if (!res.ok) throw new Error('stats HTTP ' + res.status);
+    COUNTRY_STATS = await res.json();
+    cacheSet('stats', COUNTRY_STATS);
+    _applyStats();
+  } catch (err) {
+    console.warn('Lumière initStats error:', err);
+    // Fallback: give every country a placeholder count so mosaic renders
+    Object.keys(COUNTRIES).forEach(c => {
+      COUNTRY_STATS[c] = { films: 10, directors: 4, actors: 30 };
+    });
+    _applyStats();
+  } finally {
+    showSpinner(false);
+  }
+}
+
+function _applyStats() {
+  const vals = Object.values(COUNTRY_STATS);
+  maxFilmCount     = Math.max(1, ...vals.map(v => v.films     || 0));
+  maxActorCount    = Math.max(1, ...vals.map(v => v.actors    || 0));
+  maxDirectorCount = Math.max(1, ...vals.map(v => v.directors || 0));
+  buildMosaicLayout();
+  updateStats();
+  renderRightPanel();
+}
+
+// ── Per-country data fetch — called on tile click ─────────
+async function fetchCountryData(code) {
+  const cacheKey = viewMode + '_' + code;
+  const cached   = cacheGet(cacheKey);
+  if (cached) { _storeCountryData(code, cached, viewMode); return cached; }
+
+  try {
+    let data;
+    if (viewMode === 'films') {
+      const res  = await fetch(`${API_BASE}/films?country=${code}`);
+      if (!res.ok) throw new Error('films HTTP ' + res.status);
+      const json = await res.json();
+      data = json.films || [];
+    } else {
+      const type = viewMode === 'directors' ? 'director' : 'actor';
+      const res  = await fetch(`${API_BASE}/people?country=${code}&type=${type}`);
+      if (!res.ok) throw new Error('people HTTP ' + res.status);
+      const json = await res.json();
+      data = json.people || [];
+    }
+    cacheSet(cacheKey, data);
+    _storeCountryData(code, data, viewMode);
+    return data;
+  } catch (err) {
+    console.warn(`Lumière fetchCountryData ${viewMode}/${code}:`, err);
+    return [];
+  }
+}
+
+function _storeCountryData(code, data, mode) {
+  if (mode === 'films') {
+    COUNTRY_FILMS[code] = data;
+    const seen = new Set(LOADED_FILMS.map(f => f.id));
+    data.forEach(f => { if (!seen.has(f.id)) LOADED_FILMS.push(f); });
+  } else if (mode === 'directors') {
+    COUNTRY_DIRECTORS[code] = data;
+    const seen = new Set(LOADED_DIRECTORS.map(p => p.tmdbId));
+    data.forEach(p => { if (!seen.has(p.tmdbId)) LOADED_DIRECTORS.push(p); });
+  } else {
+    COUNTRY_ACTORS[code] = data;
+    const seen = new Set(LOADED_ACTORS.map(p => p.tmdbId));
+    data.forEach(p => { if (!seen.has(p.tmdbId)) LOADED_ACTORS.push(p); });
+  }
+}
+
+// ─── CINEMA MOVEMENTS DEFINITIONS ───
+const MOVEMENT_DEFS = {
+  'Pionieri':          { desc:'I padri fondatori del linguaggio cinematografico (1895-1927): da Méliès a Griffith, da Eisenstein a Sjöström.' },
+  'Classico':          { desc:'Il cinema classico narrativo del periodo aureo hollywoodiano e mondiale (1920-1960).' },
+  'Neorealismo':       { desc:'Il cinema della realtà sociale nel dopoguerra: Italia e correnti affini nel mondo.' },
+  'Nouvelle Vague':    { desc:'La rivoluzione del cinema moderno europeo degli anni Sessanta: Godard, Truffaut, Varda.' },
+  'New Hollywood':     { desc:'La generazione che reinventò il cinema americano dal 1967 al 1980: Coppola, Scorsese, Spielberg.' },
+  'Cinema d\'autore':  { desc:'Il cinema come visione personale e sguardo unico sul mondo: da Bergman a Tarkovsky, da Fellini a Kiarostami.' },
+  'Documentario':      { desc:'I maestri del cinema del reale e del documentario d\'autore.' },
+  'Animazione':        { desc:'I padri e i maestri del cinema animato mondiale: da Miyazaki a McLaren.' },
+  'Horror & Thriller': { desc:'I registi del perturbante, del genere e della tensione: da Argento a Cronenberg, da Kurosawa K. a Hitchcock.' },
+  'Contemporaneo':     { desc:'Il cinema globale dagli anni Novanta a oggi: nuove voci, nuovi sguardi, nuovi linguaggi.' },
+};
+
+const ACTOR_TYPE_DEFS = {
+  'Drammatico':   { desc:'I grandi protagonisti del cinema drammatico mondiale, dalle origini al presente.' },
+  'Auteur':       { desc:'Muse e collaboratori del cinema d\'autore europeo e mondiale: Bergman, Antonioni, Godard, Tarkovsky.' },
+  'Commedia':     { desc:'I maestri del cinema comico, dall\'era del muto alle commedie contemporanee.' },
+  'Azione':       { desc:'Le star del cinema popolare di genere: azione, samurai, arti marziali, thriller.' },
+  'Antagonista':  { desc:'I grandi interpreti di villain e personaggi moralmente ambigui, tra i più indimenticabili del cinema.' },
+  'Caratterista': { desc:'I caratteristi e carattere assoluti che hanno costruito il cinema con ruoli di supporto e trasformazioni totali.' },
+  'Musical':      { desc:'I protagonisti del cinema musicale e della danza: da Gene Kelly a Shah Rukh Khan.' },
+  'Cinema muto':  { desc:'I pionieri del cinema muto che hanno inventato il linguaggio visivo prima della parola.' },
+};
+
+
+// ═══════════════════════════════════════════════════════
+// COUNTRY REPRESENTATIVE IMAGES (film poster / actor photo)
+// ═══════════════════════════════════════════════════════
+// Film poster URLs verified from TMDB (https://image.tmdb.org/t/p/w300/<path>)
+// ═══════════════════════════════════════════════════════
+// TILE COLOR HELPERS
+// ═══════════════════════════════════════════════════════
+// Deterministic hash 0..1 from country code (for stable sepia luminosity)
+function codeHash(code){
+  let h=0;
+  for(const ch of code) h=(h*31+ch.charCodeAt(0))&0xffff;
+  return h/0xffff;
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let viewMode    = 'films';
+let activeGenre = new Set();
+let hoveredCode  = null;
+let selectedCode = null;
+let maxCountCode = null;   // country with most films/actors (gets gold tile)
+let panX = 0, panY = 0, zoom = 1;
+let didPan = false, mDownX = 0, mDownY = 0, lastMX = 0, lastMY = 0;
+let animTarget = null, animFrom = null, animStart = 0;
+const ANIM_DUR = 550;
+const nodeHoverT = {};
+const bandHoverT = {}; // per-column lerp for width expansion (keyed by base x)
+
+// ── Auto-animation al lancio ──
+let autoMode        = true;   // true = animazione automatica attiva
+let autoCode        = null;   // tessera correntemente "animata" in auto
+let autoTimer       = null;   // handle setInterval del ciclo auto
+let inactivityTimer = null;   // handle setTimeout: riavvia auto dopo 2s di inattività
+const AUTO_EXPAND_MULT  = 2.0;   // ingrandimento 2x rispetto all'hover
+const INACTIVITY_DELAY  = 2000;  // ms di inattività prima di riattivare l'auto
+
+// ═══════════════════════════════════════════════════════
+// CANVAS
+// ═══════════════════════════════════════════════════════
+const canvas = document.getElementById('lumiere-canvas');
+const ctx    = canvas.getContext('2d');
+const GEO_LON_MIN=-130, GEO_LON_MAX=175, GEO_LAT_MAX=72, GEO_LAT_MIN=-50, GEO_PAD=0.05;
+
+function geoToNorm(lon,lat){
+  const x=GEO_PAD+(lon-GEO_LON_MIN)/(GEO_LON_MAX-GEO_LON_MIN)*(1-2*GEO_PAD);
+  const y=GEO_PAD+(GEO_LAT_MAX-lat)/(GEO_LAT_MAX-GEO_LAT_MIN)*(1-2*GEO_PAD);
+  return {x,y};
+}
+
+function initPositions(){
+  Object.entries(COUNTRIES).forEach(([code,c])=>{
+    const n=geoToNorm(c.lon,c.lat);
+    c._nx=n.x; c._ny=n.y;
+  });
+}
+
+function worldPt(code){
+  const c=COUNTRIES[code];
+  return { x:c._nx*canvas.width, y:c._ny*canvas.height };
+}
+
+function screenPt(wx,wy){ return {x:wx*zoom+panX, y:wy*zoom+panY}; }
+function worldFromScreen(sx,sy){ return {x:(sx-panX)/zoom, y:(sy-panY)/zoom}; }
+
+function resize(){
+  canvas.width  = canvas.parentElement.offsetWidth  || window.innerWidth;
+  canvas.height = canvas.parentElement.offsetHeight || window.innerHeight;
+  buildMosaicLayout();
+}
+
+function fitView(){
+  // Calculate zoom/pan so all nodes fit in the visible center area (between panels)
+  const isDesktop = window.innerWidth >= 900;
+  const padL = isDesktop ? 320 : 16;
+  const padR = isDesktop ? 320 : 16;
+  const padT = 74;
+  const padB = 44;
+  const visW = canvas.width  - padL - padR;
+  const visH = canvas.height - padT - padB;
+  if(visW <= 0 || visH <= 0) return;
+
+  const codes = Object.keys(COUNTRIES);
+  const wxs = codes.map(c => COUNTRIES[c]._nx * canvas.width);
+  const wys = codes.map(c => COUNTRIES[c]._ny * canvas.height);
+  const minX = Math.min(...wxs), maxX = Math.max(...wxs);
+  const minY = Math.min(...wys), maxY = Math.max(...wys);
+  const cW = maxX - minX, cH = maxY - minY;
+  if(cW === 0 || cH === 0) return;
+
+  const z = Math.min(visW / cW, visH / cH) * 0.88;
+  zoom = Math.min(Math.max(z, 0.3), 1.2);
+
+  // Center in visible area
+  const contentCX = (minX + maxX) / 2 * zoom;
+  const contentCY = (minY + maxY) / 2 * zoom;
+  const visCX = padL + visW / 2;
+  const visCY = padT + visH / 2;
+  panX = visCX - contentCX;
+  panY = visCY - contentCY;
+}
+
+function getCountryCount(code){
+  const s = COUNTRY_STATS[code] || {};
+  return viewMode==='films' ? (s.films||0) : viewMode==='directors' ? (s.directors||0) : (s.actors||0);
+}
+
+function getNodeRadius(code){
+  const BASE=10, DELTA=30;
+  const count=getCountryCount(code);
+  const maxC=viewMode==='films'?maxFilmCount:viewMode==='directors'?maxDirectorCount:maxActorCount;
+  return BASE + Math.sqrt(count/Math.max(1,maxC))*DELTA;
+}
+
+// Returns locally-cached films/people for a country (empty if not yet fetched)
+function getFilteredFilms(code){
+  return COUNTRY_FILMS[code] || [];
+}
+function getFilteredActors(code){
+  return COUNTRY_ACTORS[code] || [];
+}
+function getFilteredDirectors(code){
+  return COUNTRY_DIRECTORS[code] || [];
+}
+
+// Genre/movement filtering is not available in live mode (would require all data loaded)
+function isDimmed(code){ return false; }
+
+// ═══════════════════════════════════════════════════════
+// MOSAIC LAYOUT ENGINE
+// ═══════════════════════════════════════════════════════
+// Longitude band boundaries (west → east) — 6 geographic columns
+const MOSAIC_BANDS=[
+  {minLon:-180,maxLon:-25},   // Americas      : CA US MX AR BR        (5)
+  {minLon: -25,maxLon:  8},   // Europe-West   : IE GB PT ES FR BE      (6)
+  {minLon:   8,maxLon: 17},   // Europe-Central: NO DK DE IT AT CZ      (6)
+  {minLon:  17,maxLon: 42},   // Europe-East   : SE HU PL RO            (4)
+  {minLon:  42,maxLon: 90},   // Asia-West     : IR RU IN               (3)
+  {minLon:  90,maxLon:180},   // Asia-East     : CN HK TW KR JP AU NZ   (7)
+];
+const MOSAIC_GAP=2;           // px gap between tiles
+let mosaicLayout={};          // { code: {x,y,w,h} } — base layout
+let liveMosaicLayout={};      // frame-by-frame layout with hover distortion
+
+function buildMosaicLayout(){
+  const cW=canvas.width, cH=canvas.height;
+
+  // Assign countries to bands, sort N→S within each band
+  const bands=MOSAIC_BANDS.map(b=>({
+    ...b,
+    countries:Object.keys(COUNTRIES)
+      .filter(c=>COUNTRIES[c].lon>=b.minLon&&COUNTRIES[c].lon<b.maxLon)
+      .sort((a,z)=>COUNTRIES[z].lat-COUNTRIES[a].lat)
+  })).filter(b=>b.countries.length>0);
+
+  // Weight per country = sqrt(total count from COUNTRY_STATS), min 1
+  function wt(code){
+    return Math.sqrt(Math.max(1, getCountryCount(code)));
+  }
+
+  // Band weight = sum of country weights
+  bands.forEach(b=>{ b.totalW=b.countries.reduce((s,c)=>s+wt(c),0); });
+  const totalW=bands.reduce((s,b)=>s+b.totalW,0);
+
+  // Column widths proportional to band weight (subtract column gaps)
+  const colGaps=(bands.length-1)*MOSAIC_GAP;
+  let x=0;
+  bands.forEach((b,i)=>{
+    b.colX=Math.round(x);
+    const rawW=(b.totalW/totalW)*(cW-colGaps);
+    b.colW=(i===bands.length-1)
+      ? cW-b.colX
+      : Math.round(rawW);
+    x+=b.colW+MOSAIC_GAP;
+  });
+
+  // Row heights within each band (subtract row gaps)
+  const layout={};
+  bands.forEach(b=>{
+    const rowGaps=(b.countries.length-1)*MOSAIC_GAP;
+    let y=0;
+    b.countries.forEach((code,idx)=>{
+      const h=(idx===b.countries.length-1)
+        ? cH-y
+        : Math.round((wt(code)/b.totalW)*(cH-rowGaps));
+      layout[code]={x:b.colX,y,w:b.colW,h};
+      y+=h+MOSAIC_GAP;
+    });
+  });
+  mosaicLayout=layout;
+
+  // Track which country has the most content (gets gold tile)
+  let topN=0; maxCountCode=null;
+  Object.keys(COUNTRIES).forEach(code=>{
+    const n=getCountryCount(code);
+    if(n>topN){topN=n;maxCountCode=code;}
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// LIVE LAYOUT (hover distortion)
+// ═══════════════════════════════════════════════════════
+const HOVER_EXPAND=0.55;   // max fractional height expansion of hovered tile
+const HOVER_EXPAND_W=0.35; // max fractional width expansion of hovered column
+
+function computeLiveLayout(){
+  // Group tiles by base x (= band column)
+  const bandMap={};
+  Object.keys(mosaicLayout).forEach(code=>{
+    const col=mosaicLayout[code].x;
+    if(!bandMap[col]) bandMap[col]=[];
+    bandMap[col].push(code);
+  });
+
+  // Sort columns left→right
+  const sortedCols=Object.keys(bandMap).map(Number).sort((a,b)=>a-b);
+  const totalBands=sortedCols.length;
+  const colGaps=(totalBands-1)*MOSAIC_GAP;
+
+  // Base widths (all tiles in a band share the same w)
+  const baseW=sortedCols.map(col=>mosaicLayout[bandMap[col][0]].w);
+  const totalBaseW=baseW.reduce((s,w)=>s+w,0);
+
+  // Per-band hover intensity: use the slow bandHoverT lerp for smooth column transitions
+  const bandHT=sortedCols.map(col=>bandHoverT[col]||0);
+
+  // Moltiplicatore espansione: 2× in modalità auto, 1× in hover normale
+  const xMult = autoMode ? AUTO_EXPAND_MULT : 1.0;
+
+  // In mobile usa fattori più alti per raggiungere almeno il 60% dello spazio disponibile
+  const isMobile = canvas.width <= 767;
+  const hExpand = isMobile ? 5.0 : HOVER_EXPAND;
+  const wExpand = isMobile ? 2.5 : HOVER_EXPAND_W;
+
+  // Expand band widths then normalize so total stays = totalBaseW
+  const expandedW=baseW.map((w,i)=>Math.max(2,w*(1+wExpand*xMult*bandHT[i])));
+  const totalExpandedW=expandedW.reduce((s,w)=>s+w,0);
+  const normW=totalBaseW/totalExpandedW;
+  const finalW=expandedW.map(w=>Math.max(2,w*normW));
+
+  // Recompute x positions for each band
+  const bandX=[];
+  let bx=0;
+  finalW.forEach(w=>{ bandX.push(Math.round(bx)); bx+=w+MOSAIC_GAP; });
+
+  liveMosaicLayout={};
+
+  sortedCols.forEach((col,bi)=>{
+    const codes=bandMap[col];
+    codes.sort((a,b)=>mosaicLayout[a].y-mosaicLayout[b].y);
+
+    const baseH=codes.map(c=>mosaicLayout[c].h);
+    const totalBaseH=baseH.reduce((s,h)=>s+h,0);
+    const hT=codes.map(c=>nodeHoverT[c]||0);
+
+    // Expand height for hovered tile, normalize to keep total constant
+    const expanded=baseH.map((h,i)=>Math.max(2,h*(1+hExpand*xMult*hT[i])));
+    const totalExpanded=expanded.reduce((s,h)=>s+h,0);
+    const norm=totalBaseH/totalExpanded;
+    const finalH=expanded.map(h=>Math.max(2,h*norm));
+
+    const newX=bandX[bi];
+    const newW=Math.round(finalW[bi]);
+
+    let y=mosaicLayout[codes[0]].y;
+    codes.forEach((code,i)=>{
+      liveMosaicLayout[code]={
+        x:newX,
+        y:Math.round(y),
+        w:newW,
+        h:Math.round(finalH[i])
+      };
+      y+=finalH[i]+MOSAIC_GAP;
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════════════════════
+const CONT_COLOR={europe:'0,229,255',americas:'255,204,0',asia:'204,51,255',africa:'255,119,0',oceania:'0,187,170'};
+
+function drawVignette(w,h){
+  const g=ctx.createRadialGradient(w/2,h/2,h*0.18,w/2,h/2,h*0.85);
+  g.addColorStop(0,'transparent');
+  g.addColorStop(1,'rgba(3,4,7,0.38)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+}
+
+/* ── Rounded-rect path helper (matches button border-radius:5px) ── */
+function rrPath(x,y,w,h,r){
+  const R=Math.min(r,w/2,h/2);
+  if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x,y,w,h,R); return; }
+  ctx.beginPath();
+  ctx.moveTo(x+R,y);
+  ctx.lineTo(x+w-R,y); ctx.arcTo(x+w,y,x+w,y+R,R);
+  ctx.lineTo(x+w,y+h-R); ctx.arcTo(x+w,y+h,x+w-R,y+h,R);
+  ctx.lineTo(x+R,y+h); ctx.arcTo(x,y+h,x,y+h-R,R);
+  ctx.lineTo(x,y+R); ctx.arcTo(x,y,x+R,y,R);
+  ctx.closePath();
+}
+
+function drawTile(code){
+  const tile=liveMosaicLayout[code]||mosaicLayout[code];
+  if(!tile) return;
+
+  const c  =COUNTRIES[code];
+  const hT =nodeHoverT[code]||0;
+  const {x,y,w,h}=tile;
+  const cx=x+w/2, cy=y+h/2;
+  const dim=isDimmed(code);
+  const isMax=(code===maxCountCode);
+  const r=Math.min(5,w/4,h/4); // border-radius matching buttons
+
+  ctx.globalAlpha=dim?0.15:1;
+
+  /* ── Background fill ── */
+  if(isMax){
+    // Gold tile for the dominant country
+    const grd=ctx.createLinearGradient(x,y,x+w,y+h);
+    grd.addColorStop(0,'hsl(48,80%,28%)');
+    grd.addColorStop(1,'hsl(45,90%,36%)');
+    ctx.fillStyle=grd;
+  } else {
+    // Sepia-gray with unique luminosity per country code (deterministic)
+    const L=Math.round(14+codeHash(code)*26); // 14%–40%
+    const grd=ctx.createLinearGradient(x,y,x,y+h);
+    grd.addColorStop(0,`hsl(30,10%,${L+4}%)`);
+    grd.addColorStop(1,`hsl(30,10%,${L-3}%)`);
+    ctx.fillStyle=grd;
+  }
+  rrPath(x,y,w,h,r); ctx.fill();
+
+  /* ── Hover highlight ── */
+  if(hT>0.04&&!dim){
+    ctx.fillStyle=`rgba(255,255,255,${hT*0.09})`;
+    rrPath(x,y,w,h,r); ctx.fill();
+  }
+
+  /* ── Labels: country name (word-wrapped) + count centered in tile ── */
+  if(w>22&&h>14){
+    const count=getCountryCount(code);  // from COUNTRY_STATS (live from TMDB)
+    const showCount=h>46&&w>34;
+
+    ctx.save();
+    rrPath(x,y,w,h,r); ctx.clip(); // clip text to rounded tile
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+
+    const nSz=Math.max(6,Math.min(w*0.13,h*0.15,12+hT*6));
+    const letterSp=Math.round(nSz*0.18);
+    ctx.font=`${nSz}px 'Share Tech Mono',monospace`;
+    if(ctx.letterSpacing!==undefined) ctx.letterSpacing=letterSp+'px';
+    const hasLS=(ctx.letterSpacing!==undefined);
+    const approxW=str=>ctx.measureText(str).width+(hasLS?0:str.length*letterSp);
+
+    // Split into words; truncate each word individually if too wide
+    const rawWords=c.name.toUpperCase().split(' ');
+    const lines=rawWords.map(word=>{
+      let nm=word;
+      while(approxW(nm)>w-8&&nm.length>2) nm=nm.slice(0,-1);
+      if(nm!==word) nm=nm.trimEnd()+'…';
+      return nm;
+    });
+
+    const lineH=nSz*1.35;
+    const nameBlockH=(lines.length-1)*lineH+nSz;
+
+    // Compute cSz now so we can use it for layout
+    const cSz=showCount?Math.max(8,Math.min(h*0.22,w*0.20,22+hT*14)):0;
+    const GAP=nSz*2.0; // gap between bottom of name block and top of count
+    const totalBlockH=showCount?nameBlockH+GAP+cSz:nameBlockH;
+    const blockStart=cy-totalBlockH/2;
+
+    // Draw name lines
+    const nameShadow=isMax?'rgba(0,0,0,0.3)':'rgba(0,0,0,0.7)';
+    const nameColor=isMax?'rgba(0,0,0,0.85)':`rgba(255,255,255,${0.75+hT*0.25})`;
+    lines.forEach((line,li)=>{
+      const wy=blockStart+nSz/2+li*lineH;
+      ctx.fillStyle=nameShadow;
+      ctx.fillText(line,cx+1,wy+1);
+      ctx.fillStyle=nameColor;
+      ctx.fillText(line,cx,wy);
+    });
+
+    // Draw count
+    if(showCount){
+      if(ctx.letterSpacing!==undefined) ctx.letterSpacing='0px';
+      ctx.font=`${cSz}px 'Bebas Neue',sans-serif`;
+      const cText=String(count);
+      const countY=blockStart+nameBlockH+GAP+cSz/2;
+      ctx.fillStyle=isMax?'rgba(0,0,0,0.2)':'rgba(0,0,0,0.6)';
+      ctx.fillText(cText,cx+1,countY+1);
+      ctx.fillStyle=isMax?'rgba(0,0,0,0.55)':'rgba(255,215,0,0.80)';
+      ctx.fillText(cText,cx,countY);
+    }
+
+    ctx.restore();
+  }
+
+  /* ── Border / selection ── */
+  if(!dim){
+    ctx.save();
+    if(selectedCode===code){
+      ctx.strokeStyle=isMax?'rgba(0,0,0,0.55)':'rgba(255,215,0,0.95)';
+      ctx.lineWidth=2.5;
+      rrPath(x+1.5,y+1.5,w-3,h-3,Math.max(0,r-1.5)); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  ctx.globalAlpha=1;
+}
+
+function updateAnim(){
+  if(!animTarget) return;
+  const t=Math.min(1,(performance.now()-animStart)/ANIM_DUR);
+  const e=t<0.5?2*t*t:-1+(4-2*t)*t;
+  panX=animFrom.x+(animTarget.x-animFrom.x)*e;
+  panY=animFrom.y+(animTarget.y-animFrom.y)*e;
+  zoom=animFrom.z+(animTarget.z-animFrom.z)*e;
+  if(t>=1){panX=animTarget.x;panY=animTarget.y;zoom=animTarget.z;animTarget=null;}
+}
+
+
+function draw(){
+  requestAnimationFrame(draw);
+  const w=canvas.width,h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  // Codice "attivo": in auto mode è autoCode, altrimenti hoveredCode
+  const activeCode = autoMode ? autoCode : hoveredCode;
+
+  // Update per-tile hover lerps (height animation)
+  Object.keys(COUNTRIES).forEach(code=>{
+    if(!nodeHoverT[code]) nodeHoverT[code]=0;
+    const target=code===activeCode?1:0;
+    nodeHoverT[code]+=(target-nodeHoverT[code])*0.14;
+  });
+
+  // Update per-column hover lerps (width animation — slower for smooth column transitions)
+  const _hbx=(activeCode&&mosaicLayout[activeCode])?mosaicLayout[activeCode].x:-1;
+  Object.keys(mosaicLayout).forEach(code=>{
+    const bx=mosaicLayout[code].x;
+    if(bandHoverT[bx]===undefined) bandHoverT[bx]=0;
+    const target=bx===_hbx?1:0;
+    bandHoverT[bx]+=(target-bandHoverT[bx])*0.02;
+  });
+
+  // Compute live layout with hover distortion, then draw
+  computeLiveLayout();
+  Object.keys(COUNTRIES).forEach(code=>{if(isDimmed(code)) drawTile(code);});
+  Object.keys(COUNTRIES).forEach(code=>{if(!isDimmed(code)) drawTile(code);});
+
+  drawVignette(w,h);
+}
+
+// ═══════════════════════════════════════════════════════
+// HIT TEST
+// ═══════════════════════════════════════════════════════
+function getNodeAt(sx,sy){
+  // Use live layout (includes hover distortion) for accurate hit testing
+  const layout=Object.keys(liveMosaicLayout).length?liveMosaicLayout:mosaicLayout;
+  let found=null;
+  Object.keys(COUNTRIES).forEach(code=>{
+    const t=layout[code];
+    if(!t) return;
+    if(sx>=t.x&&sx<=t.x+t.w&&sy>=t.y&&sy<=t.y+t.h) found=code;
+  });
+  return found;
+}
+
+// ═══════════════════════════════════════════════════════
+// ZOOM FUNCTIONS
+// ═══════════════════════════════════════════════════════
+function zoomToCountry(code){
+  const wp=worldPt(code);
+  const tz=3.0;
+  const tx=canvas.width/2-wp.x*tz;
+  const ty=canvas.height/2-wp.y*tz;
+  animFrom={x:panX,y:panY,z:zoom};
+  animTarget={x:tx,y:ty,z:tz};
+  animStart=performance.now();
+}
+
+let _initPanX=0, _initPanY=0, _initZoom=1;
+
+function saveInitView(){ _initPanX=panX; _initPanY=panY; _initZoom=zoom; }
+
+function resetView(){
+  animFrom={x:panX,y:panY,z:zoom};
+  animTarget={x:_initPanX,y:_initPanY,z:_initZoom};
+  animStart=performance.now();
+}
+
+// ═══════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════
+// ── Modalità auto-animazione ──────────────────────────────
+function startAutoMode(){
+  const codes=Object.keys(COUNTRIES);
+  // Scegli una tessera random (diversa da quella corrente)
+  function pickNext(){
+    const eligible=codes.filter(c=>c!==autoCode);
+    return eligible[Math.floor(Math.random()*eligible.length)];
+  }
+  autoMode=true;
+  autoCode=pickNext();
+  autoTimer=setInterval(()=>{
+    if(!autoMode) return;
+    autoCode=pickNext();
+  }, 4000); // cambia tessera ogni 4 s
+}
+
+function stopAutoMode(){
+  if(!autoMode) return;
+  autoMode=false;
+  autoCode=null;
+  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
+}
+
+// Chiamata ad ogni evento di input: ferma l'auto immediatamente e
+// schedula il riavvio dopo INACTIVITY_DELAY ms di silenzio.
+function resetInactivityTimer(){
+  if(autoMode) stopAutoMode();
+  if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer=null; }
+  inactivityTimer=setTimeout(()=>{ inactivityTimer=null; startAutoMode(); }, INACTIVITY_DELAY);
+}
+// ──────────────────────────────────────────────────────────
+
+canvas.addEventListener('mousemove',e=>{
+  resetInactivityTimer(); // ogni movimento resetta il timer di inattività
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const hit=getNodeAt(mx,my);
+  if(hit!==hoveredCode){
+    hoveredCode=hit;
+    canvas.style.cursor=(hit&&!isDimmed(hit))?'pointer':'default';
+  }
+  document.querySelectorAll('.legend-item[data-code]').forEach(el=>{
+    el.classList.toggle('active',el.dataset.code===hit);
+  });
+});
+
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const hit=getNodeAt(mx,my);
+  if(hit&&!isDimmed(hit)){
+    selectCountry(hit);
+  } else if(selectedCode){
+    closePinnedTooltip();
+  }
+});
+
+canvas.addEventListener('dblclick',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const hit=getNodeAt(mx,my);
+  if(hit&&!isDimmed(hit)) selectCountry(hit); else if(selectedCode) closePinnedTooltip();
+});
+
+canvas.addEventListener('mouseleave',()=>{
+  hoveredCode=null;
+  document.querySelectorAll('.legend-item[data-code]').forEach(el=>el.classList.remove('active'));
+  // Il mouse ha lasciato il canvas: schedule riavvio auto dopo 2s
+  if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer=null; }
+  inactivityTimer=setTimeout(()=>{ inactivityTimer=null; startAutoMode(); }, INACTIVITY_DELAY);
+});
+
+// Touch — hover animation during swipe, tap to select
+let _touchStartX=0, _touchStartY=0, _touchDist=0;
+const TAP_THRESHOLD=12;
+
+canvas.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1) return;
+  resetInactivityTimer();
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.touches[0].clientX-rect.left, my=e.touches[0].clientY-rect.top;
+  _touchStartX=mx; _touchStartY=my; _touchDist=0;
+  const hit=getNodeAt(mx,my);
+  hoveredCode=hit||null;
+},{passive:true});
+
+canvas.addEventListener('touchmove',e=>{
+  if(e.touches.length!==1) return;
+  resetInactivityTimer();
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.touches[0].clientX-rect.left, my=e.touches[0].clientY-rect.top;
+  const dx=mx-_touchStartX, dy=my-_touchStartY;
+  _touchDist=Math.sqrt(dx*dx+dy*dy);
+  const hit=getNodeAt(mx,my);
+  hoveredCode=hit||null;
+},{passive:true});
+
+canvas.addEventListener('touchend',e=>{
+  if(e.changedTouches.length!==1){hoveredCode=null;return;}
+  const wasTap=_touchDist<TAP_THRESHOLD;
+  if(wasTap){
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.changedTouches[0].clientX-rect.left, my=e.changedTouches[0].clientY-rect.top;
+    const hit=getNodeAt(mx,my);
+    if(hit&&!isDimmed(hit)) selectCountry(hit); else if(selectedCode) closePinnedTooltip();
+  }
+  hoveredCode=null;
+  // Dito sollevato: schedule riavvio auto dopo 2s
+  if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer=null; }
+  inactivityTimer=setTimeout(()=>{ inactivityTimer=null; startAutoMode(); }, INACTIVITY_DELAY);
+},{passive:true});
+
+// ═══════════════════════════════════════════════════════
+// PINNED TOOLTIP
+// ═══════════════════════════════════════════════════════
+const ttEl=document.getElementById('tooltip');
+const ttOv=document.getElementById('tt-overlay');
+
+async function selectCountry(code){
+  selectedCode=code;
+  document.querySelectorAll('.legend-item[data-code]').forEach(el=>{
+    el.classList.toggle('active',el.dataset.code===code);
+  });
+  await buildPinnedTooltip(code);
+}
+
+async function buildPinnedTooltip(code){
+  const c=COUNTRIES[code];
+  const isFilms=viewMode==='films';
+  const isDirectors=viewMode==='directors';
+  const modeLabel=isFilms?'FILM':isDirectors?'REGISTI':'ATTORI';
+  const totalCount=(COUNTRY_STATS[code]||{})[viewMode==='films'?'films':viewMode==='directors'?'directors':'actors']||'…';
+
+  // SVG icons
+  const svgExtLink=`<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7"/><path d="M8 1h3v3M11 1 6 6"/></svg>`;
+  const svgPlay=`<svg viewBox="0 0 12 12" fill="currentColor"><polygon points="2,1 11,6 2,11"/></svg>`;
+
+  // Show panel immediately with loading state
+  const loadingHtml=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${c.flag} ${totalCount} ${modeLabel} · ${c.continent.toUpperCase()}</div></div><button class="modal-close" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body"><div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento dati TMDB…</span></div></div>`;
+  ttEl.innerHTML=loadingHtml;
+  ttEl.className='pinned';
+  setTimeout(()=>ttEl.classList.add('tt-vis'),10);
+  ttOv.classList.add('active');
+
+  // Fetch data
+  const items=await fetchCountryData(code);
+  if(selectedCode!==code) return; // user closed / switched
+
+  // Sort: films newest first, people youngest first
+  const sorted=isFilms
+    ? [...items].sort((a,b)=>(b.year||0)-(a.year||0))
+    : [...items].sort((a,b)=>(b.born||0)-(a.born||0));
+
+  // Wikipedia link helpers
+  const wikiLinkFilm=f=>{
+    const q=encodeURIComponent(f.title+' '+f.year);
+    const url=f.url||`https://en.wikipedia.org/w/index.php?search=${q}&ns0=1`;
+    return `<a class="card-source-link" href="${url}" target="_blank" rel="noopener noreferrer">${svgExtLink}Wikipedia</a>`;
+  };
+  const wikiLinkPerson=p=>{
+    const q=encodeURIComponent(p.name);
+    const url=p.url||`https://en.wikipedia.org/w/index.php?search=${q}&ns0=1`;
+    return `<a class="card-source-link" href="${url}" target="_blank" rel="noopener noreferrer">${svgExtLink}Wikipedia</a>`;
+  };
+  const trailerLinkFilm=f=>{
+    const q=encodeURIComponent(f.title+' '+(f.year||'')+' trailer');
+    const url=f.trailer||`https://www.youtube.com/results?search_query=${q}`;
+    return `<a class="card-source-link card-trailer-link" href="${url}" target="_blank" rel="noopener noreferrer">${svgPlay}Trailer</a>`;
+  };
+
+  let html=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${sorted.length} ${modeLabel} caricati · ${c.continent.toUpperCase()}</div></div><button class="modal-close" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body">`;
+
+  if(sorted.length===0){
+    html+=`<div style="color:var(--text-dim);font-family:var(--ff-mono);font-size:1.05rem;padding:20px 0">Nessun dato disponibile da TMDB per questa nazione.</div>`;
+  } else if(isFilms){
+    sorted.forEach(f=>{
+      const actorsStr=(f.actors||[]).length>0?`<div class="film-actors-line">Con: ${f.actors.join(', ')}</div>`:'';
+      const dirStr=f.director?`<span class="film-dir">Regia: ${f.director}</span>`:'';
+      const ratingStr=f.rating?` <span style="color:var(--gold);opacity:0.7;font-size:0.75rem">★ ${f.rating.toFixed(1)}</span>`:'';
+      html+=`<div class="film-card"><div class="film-year">${f.year||'—'}</div><div class="film-info"><div class="film-title">${f.title}${f.itTitle?` <span class="film-it-title">(${f.itTitle})</span>`:''}</div><div class="film-meta"><span class="film-genre-tag g-${f.genre||'Drammatico'}">${f.genre||'—'}</span>${dirStr}${ratingStr}</div>${f.synopsis?`<div class="film-synopsis">${f.synopsis}</div>`:''}${actorsStr}<div class="card-links">${wikiLinkFilm(f)}${trailerLinkFilm(f)}</div></div></div>`;
+    });
+  } else if(isDirectors){
+    sorted.forEach(d=>{
+      const yearsStr=(d.born||'—')+(d.died?` — ${d.died}`:'');
+      const knownStr=d.knownFor&&d.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${d.knownFor.slice(0,3).join(' · ')}</div>`:'';
+      html+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${d.name}</div><div class="actor-years">${yearsStr}</div>${d.bio?`<div class="actor-bio">${d.bio.slice(0,300)}${d.bio.length>300?'…':''}</div>`:''}${knownStr}${wikiLinkPerson(d)}</div></div>`;
+    });
+  } else {
+    sorted.forEach(a=>{
+      const yearsStr=(a.born||'—')+(a.died?` — ${a.died}`:'');
+      const knownStr=a.knownFor&&a.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${a.knownFor.slice(0,3).join(' · ')}</div>`:'';
+      html+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${a.name}</div><div class="actor-years">${yearsStr}</div>${a.bio?`<div class="actor-bio">${a.bio.slice(0,300)}${a.bio.length>300?'…':''}</div>`:''}${knownStr}${wikiLinkPerson(a)}</div></div>`;
+    });
+  }
+
+  html+=`</div>`;
+  ttEl.innerHTML=html;
+}
+
+function closePinnedTooltip(){
+  ttEl.classList.remove('tt-vis');
+  ttOv.classList.remove('active');
+  selectedCode=null;
+  setTimeout(()=>{ttEl.className='';ttEl.innerHTML='';},250);
+  document.querySelectorAll('.legend-item[data-code]').forEach(el=>el.classList.remove('active'));
+}
+
+// ═══════════════════════════════════════════════════════
+// PANELS
+// ═══════════════════════════════════════════════════════
+function togglePanel(side){
+  const panel=document.getElementById(side==='left'?'leftPanel':'rightPanel');
+  const tab=document.getElementById(side==='left'?'edge-left':'edge-right');
+  const isOpen=panel.classList.contains('open');
+  if(isOpen){
+    panel.classList.remove('open');
+    tab.classList.remove('active');
+    document.getElementById('panel-overlay').classList.remove('active');
+  } else {
+    closeAllPanels();
+    panel.classList.add('open');
+    tab.classList.add('active');
+    document.getElementById('panel-overlay').classList.add('active');
+  }
+}
+
+function closeAllPanels(){
+  ['leftPanel','rightPanel'].forEach(id=>document.getElementById(id).classList.remove('open'));
+  ['edge-left','edge-right'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('panel-overlay').classList.remove('active');
+}
+
+// ═══════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════
+function openGuide(){
+  document.getElementById('guide-overlay').classList.add('open');
+  document.getElementById('guideBtn').classList.add('active');
+}
+function closeGuide(){
+  document.getElementById('guide-overlay').classList.remove('open');
+  document.getElementById('guideBtn').classList.remove('active');
+}
+
+function showGenreModal(genre){ showCategoryModal(genre); }
+
+function showCategoryModal(key){
+  const isDirectors=viewMode==='directors';
+  const isActors=viewMode==='actors';
+  let def, count, countLabel, examplesText, titleColor, listItems=[], listLabel='';
+
+  const getFlag=code=>(COUNTRIES[code]&&COUNTRIES[code].flag)||'';
+
+  if(isDirectors){
+    def=MOVEMENT_DEFS[key]; if(!def) return;
+    // Show directors loaded so far (from countries visited); no movement field from TMDB
+    const items=LOADED_DIRECTORS.slice().sort((a,b)=>(b.born||0)-(a.born||0));
+    count=items.length; countLabel='registi caricati';
+    titleColor='var(--gold)';
+    examplesText='';
+    listLabel=count>0?`${count} REGISTI CARICATI`:'NESSUN REGISTA CARICATO — CLICCA UNA NAZIONE PER INIZIARE';
+    listItems=items.map(d=>`<div class="gm-row gm-row-person">
+      <span class="gm-year">${d.born||'—'}</span>
+      <span class="gm-name">${d.name}</span>
+      <span class="gm-flag">${getFlag(d.country||'')}</span>
+      <span class="gm-sub">${d.country&&COUNTRIES[d.country]?COUNTRIES[d.country].name:(d.country||'')}</span>
+    </div>`);
+  } else if(isActors){
+    def=ACTOR_TYPE_DEFS[key]; if(!def) return;
+    const items=LOADED_ACTORS.slice().sort((a,b)=>(b.born||0)-(a.born||0));
+    count=items.length; countLabel='attori caricati';
+    titleColor='var(--gold)';
+    examplesText='';
+    listLabel=count>0?`${count} ATTORI CARICATI`:'NESSUN ATTORE CARICATO — CLICCA UNA NAZIONE PER INIZIARE';
+    listItems=items.map(a=>`<div class="gm-row gm-row-person">
+      <span class="gm-year">${a.born||'—'}</span>
+      <span class="gm-name">${a.name}</span>
+      <span class="gm-flag">${getFlag(a.country||'')}</span>
+      <span class="gm-sub">${a.country&&COUNTRIES[a.country]?COUNTRIES[a.country].name:(a.country||'')}</span>
+    </div>`);
+  } else {
+    def=GENRE_DEFS[key]; if(!def) return;
+    const items=LOADED_FILMS.filter(f=>f.genre===key).sort((a,b)=>(b.year||0)-(a.year||0));
+    count=items.length; countLabel='film caricati in questo genere';
+    titleColor='var(--gold)';
+    examplesText='';
+    listLabel=count>0?`${count} FILM IN QUESTO GENERE (NAZIONI VISITATE)`:'NESSUN FILM CARICATO — CLICCA UNA NAZIONE PER INIZIARE';
+    listItems=items.map(f=>`<div class="gm-row gm-row-film">
+      <span class="gm-year">${f.year||'—'}</span>
+      <span class="gm-name">${f.title}${f.itTitle?` <span class="gm-it-title">(${f.itTitle})</span>`:''}</span>
+      <span class="gm-flag">${getFlag(f.country||'')}</span>
+      <span class="gm-sub">${f.director||'—'}</span>
+    </div>`);
+  }
+
+  document.getElementById('gm-title').textContent=key;
+  document.getElementById('gm-title').style.color=titleColor;
+  document.getElementById('gm-count').textContent=`${count} ${countLabel}`;
+  document.getElementById('gm-desc').textContent=def.desc;
+  const exEl=document.getElementById('gm-examples');
+  exEl.textContent=examplesText;
+  exEl.style.display=examplesText?'block':'none';
+  document.getElementById('gm-list-label').textContent=listLabel;
+  document.getElementById('gm-list').innerHTML=listItems.join('');
+  document.getElementById('gm-list-wrap').scrollTop=0;
+  document.getElementById('genre-overlay').classList.add('open');
+}
+
+function closeGenreModal(){
+  document.getElementById('genre-overlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════
+// LEFT PANEL RENDER
+// ═══════════════════════════════════════════════════════
+function renderLeftPanel(){
+  const isDirectors=viewMode==='directors';
+  const isActors=viewMode==='actors';
+  const defs=isDirectors?MOVEMENT_DEFS:isActors?ACTOR_TYPE_DEFS:GENRE_DEFS;
+
+  document.getElementById('lp-title').textContent=isDirectors?'Movimenti Cinematografici':isActors?'Tipologie di Attori':'Genere di Film';
+  document.getElementById('lp-filter-title').textContent=isDirectors?'Filtra per Movimento':isActors?'Filtra per Tipologia':'Filtra per Genere';
+
+  const gl=document.getElementById('genre-list');
+  gl.innerHTML='';
+  Object.entries(defs).forEach(([key,def])=>{
+    // Counts reflect locally loaded data (grow as countries are visited)
+    const count=isDirectors
+      ? LOADED_DIRECTORS.length   // no movement field from TMDB — show total loaded
+      : isActors
+        ? LOADED_ACTORS.length
+        : LOADED_FILMS.filter(f=>f.genre===key).length;
+    const item=document.createElement('div');
+    item.className='legend-item';
+    item.innerHTML=`<div class="legend-text">${key}</div><div class="legend-count">${count||'—'}</div>`;
+    item.onclick=()=>showCategoryModal(key);
+    gl.appendChild(item);
+  });
+
+  const gf=document.getElementById('genre-filters');
+  gf.innerHTML='';
+  const allBtn=document.createElement('button');
+  allBtn.className='filter-btn'+(activeGenre.size===0?' active':'');
+  allBtn.textContent='TUTTI';
+  allBtn.onclick=()=>setGenreFilter(null);
+  gf.appendChild(allBtn);
+
+  Object.keys(defs).forEach(key=>{
+    const btn=document.createElement('button');
+    btn.className='filter-btn'+(activeGenre.has(key)?' active':'');
+    btn.textContent=key;
+    btn.onclick=()=>setGenreFilter(key);
+    gf.appendChild(btn);
+  });
+}
+
+function setGenreFilter(genre){
+  if(genre===null){ activeGenre.clear(); }
+  else if(activeGenre.has(genre)){ activeGenre.delete(genre); }
+  else { activeGenre.add(genre); }
+  renderLeftPanel();
+  renderRightPanel();
+  // Close pinned tooltip if active country no longer has visible items
+  if(selectedCode&&isDimmed(selectedCode)) closePinnedTooltip();
+}
+
+// ═══════════════════════════════════════════════════════
+// RIGHT PANEL RENDER
+// ═══════════════════════════════════════════════════════
+function renderRightPanel(){
+  const cl=document.getElementById('country-list');
+  cl.innerHTML='';
+  document.getElementById('rp-title').textContent='Nazioni';
+
+  const sorted=Object.entries(COUNTRIES).map(([code,c])=>{
+    const count=getCountryCount(code);
+    return {code,c,count};
+  }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
+
+  const maxC=sorted[0]?.count||1;
+
+  sorted.forEach(({code,c,count})=>{
+    const item=document.createElement('div');
+    item.className='legend-item';
+    item.dataset.code=code;
+    const pct=Math.round(count/maxC*100);
+    item.innerHTML=`<div class="legend-text">${c.name}</div><div class="legend-count">${count}</div><div class="nation-bar"><div class="nation-fill" style="width:${pct}%"></div></div>`;
+    item.style.flexWrap='wrap';
+    item.onclick=()=>selectCountry(code);
+    item.onmouseenter=()=>{hoveredCode=code;};
+    item.onmouseleave=()=>{if(hoveredCode===code)hoveredCode=null;};
+    cl.appendChild(item);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// VIEW TOGGLE
+// ═══════════════════════════════════════════════════════
+function setViewMode(mode){
+  if(viewMode===mode) return;
+  viewMode=mode;
+  activeGenre.clear();
+  document.querySelectorAll('.mode-btn').forEach(el=>el.classList.remove('active'));
+  const el=document.getElementById('mode-stat-'+mode);
+  if(el) el.classList.add('active');
+  if(selectedCode) closePinnedTooltip();
+  buildMosaicLayout();
+  updateStats();
+  renderLeftPanel();
+  renderRightPanel();
+}
+
+// ═══════════════════════════════════════════════════════
+// STATS & UPDATE
+// ═══════════════════════════════════════════════════════
+function updateStats(){
+  // Sum totals from COUNTRY_STATS across all countries
+  const vals=Object.values(COUNTRY_STATS);
+  const totalFilms    =vals.reduce((s,v)=>s+(v.films||0),0);
+  const totalDirectors=vals.reduce((s,v)=>s+(v.directors||0),0);
+  const totalActors   =vals.reduce((s,v)=>s+(v.actors||0),0);
+  const fmt=n=>n>0?' – '+n.toLocaleString('it-IT'):' – …';
+  document.getElementById('stat-films').textContent=fmt(totalFilms);
+  document.getElementById('stat-directors').textContent=fmt(totalDirectors);
+  document.getElementById('stat-actors').textContent=fmt(totalActors);
+  document.querySelectorAll('.mode-btn').forEach(el=>el.classList.remove('active'));
+  const activeEl=document.getElementById('mode-stat-'+viewMode);
+  if(activeEl) activeEl.classList.add('active');
+}
+
+async function updateData(){
+  const btn=document.getElementById('updateBtn');
+  btn.classList.add('loading','active');btn.textContent='AGGIORNAMENTO';
+  try {
+    cacheClear();
+    COUNTRY_STATS={};
+    LOADED_FILMS=[]; LOADED_DIRECTORS=[]; LOADED_ACTORS=[];
+    Object.keys(COUNTRY_FILMS).forEach(k=>delete COUNTRY_FILMS[k]);
+    Object.keys(COUNTRY_DIRECTORS).forEach(k=>delete COUNTRY_DIRECTORS[k]);
+    Object.keys(COUNTRY_ACTORS).forEach(k=>delete COUNTRY_ACTORS[k]);
+    if(selectedCode) closePinnedTooltip();
+    await initStats();
+    const now=new Date();
+    const months=['GENNAIO','FEBBRAIO','MARZO','APRILE','MAGGIO','GIUGNO','LUGLIO','AGOSTO','SETTEMBRE','OTTOBRE','NOVEMBRE','DICEMBRE'];
+    document.getElementById('last-update').textContent=`ULTIMO AGGIORNAMENTO: ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    showFlash('Database sincronizzato — Dati TMDB aggiornati');
+  } catch(e){
+    showFlash('Errore aggiornamento: '+e.message);
+  } finally {
+    btn.classList.remove('loading','active');btn.textContent='AGGIORNA';
+  }
+}
+
+function showFlash(msg){
+  const el=document.createElement('div');
+  el.className='flash';el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),4300);
+}
+
+// ═══════════════════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════════════════
+let _resizeTimer=null;
+let _prevDesktop=window.innerWidth>=900;
+
+window.addEventListener('resize',()=>{
+  resize(); // also calls buildMosaicLayout()
+});
+
+// ═══════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(document.getElementById('guide-overlay').classList.contains('open')) closeGuide();
+    else if(document.getElementById('genre-overlay').classList.contains('open')) closeGenreModal();
+    else if(selectedCode) closePinnedTooltip();
+  }
+});
+
+// Click-outside: close open panels when clicking away
+document.addEventListener('click',e=>{
+  // Use composedPath() so detached nodes (rebuilt by renderLeftPanel) are still detected correctly
+  const path=e.composedPath();
+  const inOverlay=path.some(el=>el.classList?.contains('overlay')||el.id==='tt-overlay'||el.id==='panel-overlay');
+  if(inOverlay) return;
+  const lp=document.getElementById('leftPanel');
+  const rp=document.getElementById('rightPanel');
+  const edgeL=document.getElementById('edge-left');
+  const edgeR=document.getElementById('edge-right');
+  const inLeft=path.some(el=>el===lp||el===edgeL);
+  const inRight=path.some(el=>el===rp||el===edgeR);
+  if(lp.classList.contains('open')&&!inLeft){
+    lp.classList.remove('open');
+    edgeL.classList.remove('active');
+    document.getElementById('panel-overlay').classList.remove('active');
+  }
+  if(rp.classList.contains('open')&&!inRight){
+    rp.classList.remove('open');
+    edgeR.classList.remove('active');
+    document.getElementById('panel-overlay').classList.remove('active');
+  }
+},false);
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+requestAnimationFrame(async ()=>{
+  // Initial render with empty stats (mosaic shows equal-size tiles until stats arrive)
+  resize(); // sets canvas size + buildMosaicLayout()
+  document.getElementById('footer-year').textContent=new Date().getFullYear();
+  const now=new Date();
+  const months=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  document.getElementById('last-update').textContent=`${now.getDate()} ${months[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;
+  renderLeftPanel();
+  renderRightPanel();
+  updateStats();
+  draw();
+  startAutoMode(); // avvia l'animazione automatica casuale al lancio
+  // Fetch live stats from TMDB (resizes tiles when data arrives)
+  await initStats();
+  renderLeftPanel();
+  renderRightPanel();
+});
+</script>
+</body>
+</html>

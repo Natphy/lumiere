@@ -1,0 +1,9 @@
+{
+  "name": "lumiere",
+  "version": "1.0.0",
+  "description": "Lumière — L'Atlante del Cinema Mondiale",
+  "private": true,
+  "engines": {
+    "node": "18.x"
+  }
+}
