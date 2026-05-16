@@ -870,12 +870,9 @@ function computeLiveLayout(){
   // Moltiplicatore espansione: 2× in modalità auto, 1× in hover normale
   const xMult = autoMode ? AUTO_EXPAND_MULT : 1.0;
 
-  // Mobile e animazione automatica usano fattori di espansione più alti;
-  // l'hover manuale su desktop resta più contenuto (HOVER_EXPAND / HOVER_EXPAND_W).
-  const isMobile = canvas.width <= 767;
-  const bigZoom  = isMobile || autoMode;
-  const hExpand  = bigZoom ? 5.0 : HOVER_EXPAND;
-  const wExpand  = bigZoom ? 2.5 : HOVER_EXPAND_W;
+  // Stesso fattore di espansione su tutti i dispositivi e in tutte le modalità.
+  const hExpand = 5.0;
+  const wExpand = 2.5;
 
   // Expand band widths then normalize so total stays = totalBaseW
   const expandedW=baseW.map((w,i)=>Math.max(2,w*(1+wExpand*xMult*bandHT[i])));
