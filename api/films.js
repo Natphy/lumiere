@@ -1,13 +1,36 @@
 /**
- * /api/films?country=XX&page=1&sort=desc|asc
+ * /api/films?country=XX&page=1&sort=desc|asc[&genre=Azione]
  *
  * sort=desc (default) → primary_release_date.desc  (dal più recente al più antico)
  * sort=asc            → primary_release_date.asc   (dal più antico al più recente — dal 1895)
+ * genre               → Italian genre label (optional) — maps to TMDB with_genres ID
  *
  * Returns an enriched list of films with director + cast from credits.
  * Cached 1 h at CDN level.
  */
 const { tmdb, mapGenre } = require('./_tmdb');
+
+// Italian genre label → TMDB genre ID (for with_genres param)
+const GENRE_ID_MAP = {
+  'Azione':       28,
+  'Avventura':    12,
+  'Animazione':   16,
+  'Commedia':     35,
+  'Crimine':      80,
+  'Documentario': 99,
+  'Drammatico':   18,
+  'Famiglia':     10751,
+  'Fantasy':      14,
+  'Storico':      36,
+  'Horror':       27,
+  'Musical':      10402,
+  'Mistero':      9648,
+  'Romantico':    10749,
+  'Fantascienza': 878,
+  'Thriller':     53,
+  'Guerra':       10752,
+  'Western':      37,
+};
 
 // Map client sort param → TMDB sort_by value
 const SORT_MAP = {
@@ -45,10 +68,12 @@ async function getTrailer(filmId) {
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
-  const country  = (req.query.country || 'FR').toUpperCase().slice(0, 2);
-  const page     = Math.max(1, parseInt(req.query.page, 10) || 1);
-  const sortDir  = req.query.sort === 'asc' ? 'asc' : 'desc';
-  const tmdbSort = SORT_MAP[sortDir];
+  const country   = (req.query.country || 'FR').toUpperCase().slice(0, 2);
+  const page      = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const sortDir   = req.query.sort === 'asc' ? 'asc' : 'desc';
+  const tmdbSort  = SORT_MAP[sortDir];
+  const genreLabel = req.query.genre || null;
+  const genreId    = genreLabel ? (GENRE_ID_MAP[genreLabel] || null) : null;
 
   // Today's date as upper bound — ensures we never show future releases
   const today = new Date().toISOString().slice(0, 10);   // YYYY-MM-DD
@@ -58,7 +83,7 @@ module.exports = async function handler(req, res) {
 
   try {
     // Discover films for this country, ordered by release date
-    const discover = await tmdb('/discover/movie', {
+    const discoverParams = {
       with_origin_country:         country,
       language:                    'it-IT',
       sort_by:                     tmdbSort,
@@ -66,7 +91,9 @@ module.exports = async function handler(req, res) {
       'primary_release_date.lte':  today,       // no future releases
       'primary_release_date.gte':  '1888-01-01',// from the very dawn of cinema
       page,
-    });
+    };
+    if (genreId) discoverParams.with_genres = genreId; // genre filter (optional)
+    const discover = await tmdb('/discover/movie', discoverParams);
 
     const raw = discover.results || [];
 

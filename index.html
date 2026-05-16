@@ -562,9 +562,9 @@ function _applyStats() {
 // ── Per-country data fetch — called on tile click or "load more" ──
 // sortDir: 'desc' (newest first, default) | 'asc' (oldest first, back to 1895)
 // Returns { data:[], totalPages, totalResults, sortDir }
-async function fetchCountryData(code, page = 1, sortDir = 'desc') {
-  // Cache key includes sort direction so desc and asc pages are stored separately
-  const cacheKey = `${viewMode}_${code}_p${page}_${sortDir}`;
+async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null) {
+  // Cache key includes sort direction (and genre if active) so each combination is cached separately
+  const cacheKey = `${viewMode}_${code}_p${page}_${sortDir}${genre?'_g'+genre:''}`;
   const cached   = cacheGet(cacheKey);
   if (cached) {
     _storeCountryData(code, cached.data, viewMode);
@@ -574,7 +574,8 @@ async function fetchCountryData(code, page = 1, sortDir = 'desc') {
   try {
     let data, totalPages = 1, totalResults = 0;
     if (viewMode === 'films') {
-      const res  = await fetch(`${API_BASE}/films?country=${code}&page=${page}&sort=${sortDir}`);
+      const genreParam = genre ? `&genre=${encodeURIComponent(genre)}` : '';
+      const res  = await fetch(`${API_BASE}/films?country=${code}&page=${page}&sort=${sortDir}${genreParam}`);
       if (!res.ok) throw new Error('films HTTP ' + res.status);
       const json = await res.json();
       data         = json.films        || [];
@@ -1390,21 +1391,32 @@ function _yearOptions(isFilms, yearFilter){
 
 // ── Category chips (genre / movement / actor-type) ──
 function _buildCatChips(code, st, isFilms, isDirectors){
-  const isActors = !isFilms && !isDirectors;
-  let cats, label;
+  let allCats, label;
   if(isFilms){
-    cats  = Object.keys(GENRE_DEFS);
-    label = 'Genere';
+    allCats = Object.keys(GENRE_DEFS);
+    label   = 'Genere';
   } else if(isDirectors){
-    cats  = ['Pionieri','Classico','Neorealismo','Nouvelle Vague','New Hollywood',"Cinema d'autore",'Contemporaneo'];
-    label = 'Movimento (per anno di nascita)';
+    allCats = Object.keys(MOVEMENT_DEFS);
+    label   = 'Movimento';
   } else {
-    cats  = ['Drammatico','Auteur','Commedia','Azione','Antagonista'];
-    label = 'Tipologia (per anno di nascita)';
+    allCats = Object.keys(ACTOR_TYPE_DEFS);
+    label   = 'Tipologia';
   }
-  const all = `<button class="tt-cat-chip${st.catFilter===null?' active':''}" onclick="filterTooltipCat('${code}',null)">Tutti</button>`;
+
+  // Show only categories that appear in the loaded items (avoids empty chips)
+  const presentCats = new Set(
+    st.allItems.map(item =>
+      isFilms ? item.genre : isDirectors ? _dirEra(item) : _actorType(item)
+    ).filter(Boolean)
+  );
+  const cats = allCats.filter(c => presentCats.has(c));
+  if(cats.length === 0) return ''; // no chips if no data
+
+  // Active state: for films use tmdbGenre (TMDB-side filter), for people use catFilter
+  const activeFilter = isFilms ? st.tmdbGenre : st.catFilter;
+  const all = `<button class="tt-cat-chip${activeFilter===null?' active':''}" onclick="filterTooltipCat('${code}',null)">Tutti</button>`;
   const chips = cats.map(c=>
-    `<button class="tt-cat-chip${st.catFilter===c?' active':''}" onclick="filterTooltipCat('${code}','${c.replace(/'/g,"\\'")}')"> ${c}</button>`
+    `<button class="tt-cat-chip${activeFilter===c?' active':''}" onclick="filterTooltipCat('${code}','${c.replace(/'/g,"\\'")}')"> ${c}</button>`
   ).join('');
   return `<div class="tt-cat-row"><div class="tt-cat-label">${label}</div>${all}${chips}</div>`;
 }
@@ -1452,9 +1464,11 @@ function _refreshCards(code){
   const ctrlEl=document.querySelector('.tt-controls select');
   if(ctrlEl) ctrlEl.innerHTML=`<option value="">Tutti gli anni</option>`+_yearOptions(isFilms, st.yearFilter);
   // Refresh category chips (active state)
+  // Films: usa tmdbGenre (filtro lato TMDB). Registi/Attori: usa catFilter (filtro client-side).
+  const activeFilter = (st.mode==='films') ? st.tmdbGenre : st.catFilter;
   document.querySelectorAll('.tt-cat-chip').forEach(btn=>{
     const cat=btn.textContent.trim();
-    btn.classList.toggle('active', cat==='Tutti'?st.catFilter===null:st.catFilter===cat);
+    btn.classList.toggle('active', cat==='Tutti' ? activeFilter===null : activeFilter===cat);
   });
 }
 
@@ -1480,7 +1494,7 @@ async function buildPinnedTooltip(code){
   // Init state
   const stKey=`${viewMode}_${code}`;
   _ttState[stKey]={ code, mode:viewMode, sortDir:'desc', yearFilter:null, catFilter:null,
-                    allItems:[...items], page:1, totalPages, totalResults };
+                    tmdbGenre:null, allItems:[...items], page:1, totalPages, totalResults };
   const st=_ttState[stKey];
 
   // Subtitle
@@ -1550,9 +1564,33 @@ function filterTooltipYear(code, year){
 }
 
 // ── Public: filter by category (genre / movement / actor-type) ──
-function filterTooltipCat(code, cat){
+// Films: re-interroga TMDB con filtro genere (dati sempre aggiornati).
+// Registi/Attori: filtro client-side (TMDB non ha concetto di movimento/tipologia).
+async function filterTooltipCat(code, cat){
   const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
-  st.catFilter = cat || null;
+
+  if(st.mode==='films'){
+    st.tmdbGenre = cat || null;
+    st.catFilter = null; // il filtro è lato TMDB, non client-side
+    st.page      = 1;
+
+    // Mostra spinner durante il fetch
+    const cardsEl=document.getElementById('tt-cards');
+    if(cardsEl) cardsEl.innerHTML=`<div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento${cat?' '+cat:''}…</span></div>`;
+    const moreEl=document.getElementById('tt-load-more');
+    if(moreEl) moreEl.remove();
+
+    // Re-interroga TMDB (con o senza genere)
+    const {data, totalPages, totalResults}=await fetchCountryData(code, 1, st.sortDir, st.tmdbGenre);
+    if(selectedCode!==code) return;
+    st.allItems    = [...data];
+    st.totalPages  = totalPages;
+    st.totalResults= totalResults;
+  } else {
+    // Registi / Attori: filtro client-side
+    st.catFilter = cat || null;
+  }
+
   _refreshCards(code);
 }
 
@@ -1564,7 +1602,7 @@ async function loadMoreTooltip(code){
   const btnWrap=document.getElementById('tt-load-more');
   if(btnWrap) btnWrap.innerHTML=`<div class="tt-loading" style="padding:8px 0;justify-content:center"><div class="tt-spinner"></div><span>Caricamento…</span></div>`;
 
-  const {data:newItems}=await fetchCountryData(code, st.page+1, st.sortDir);
+  const {data:newItems}=await fetchCountryData(code, st.page+1, st.sortDir, st.tmdbGenre||null);
   if(selectedCode!==code) return;
 
   st.page++;
