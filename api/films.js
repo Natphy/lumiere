@@ -68,12 +68,13 @@ async function getTrailer(filmId) {
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
-  const country   = (req.query.country || 'FR').toUpperCase().slice(0, 2);
-  const page      = Math.max(1, parseInt(req.query.page, 10) || 1);
-  const sortDir   = req.query.sort === 'asc' ? 'asc' : 'desc';
-  const tmdbSort  = SORT_MAP[sortDir];
+  const country    = (req.query.country || 'FR').toUpperCase().slice(0, 2);
+  const page       = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const sortDir    = req.query.sort === 'asc' ? 'asc' : 'desc';
+  const tmdbSort   = SORT_MAP[sortDir];
   const genreLabel = req.query.genre || null;
   const genreId    = genreLabel ? (GENRE_ID_MAP[genreLabel] || null) : null;
+  const decade     = req.query.decade ? parseInt(req.query.decade, 10) : null;
 
   // Today's date as upper bound — ensures we never show future releases
   const today = new Date().toISOString().slice(0, 10);   // YYYY-MM-DD
@@ -84,15 +85,23 @@ module.exports = async function handler(req, res) {
   try {
     // Discover films for this country, ordered by release date
     const discoverParams = {
-      with_origin_country:         country,
-      language:                    'it-IT',
-      sort_by:                     tmdbSort,
-      'vote_count.gte':            2,           // low threshold: include classic/art-house films
-      'primary_release_date.lte':  today,       // no future releases
-      'primary_release_date.gte':  '1888-01-01',// from the very dawn of cinema
+      with_origin_country: country,
+      language:            'it-IT',
+      sort_by:             tmdbSort,
+      'vote_count.gte':    2,
       page,
     };
     if (genreId) discoverParams.with_genres = genreId; // genre filter (optional)
+    if (decade) {
+      // Decade filter: restrict to [decade, decade+9], capped at today
+      const todayYear = parseInt(today.slice(0, 4), 10);
+      discoverParams['primary_release_date.gte'] = `${decade}-01-01`;
+      discoverParams['primary_release_date.lte'] =
+        (decade + 9) >= todayYear ? today : `${decade + 9}-12-31`;
+    } else {
+      discoverParams['primary_release_date.lte'] = today;       // no future releases
+      discoverParams['primary_release_date.gte'] = '1888-01-01';// from the dawn of cinema
+    }
     const discover = await tmdb('/discover/movie', discoverParams);
 
     const raw = discover.results || [];

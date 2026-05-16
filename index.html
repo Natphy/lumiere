@@ -562,9 +562,9 @@ function _applyStats() {
 // ── Per-country data fetch — called on tile click or "load more" ──
 // sortDir: 'desc' (newest first, default) | 'asc' (oldest first, back to 1895)
 // Returns { data:[], totalPages, totalResults, sortDir }
-async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null) {
-  // Cache key includes sort direction (and genre if active) so each combination is cached separately
-  const cacheKey = `${viewMode}_${code}_p${page}_${sortDir}${genre?'_g'+genre:''}`;
+async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null, decade = null) {
+  // Cache key includes all active filters so each combination is stored separately
+  const cacheKey = `${viewMode}_${code}_p${page}_${sortDir}${genre?'_g'+genre:''}${decade?'_d'+decade:''}`;
   const cached   = cacheGet(cacheKey);
   if (cached) {
     _storeCountryData(code, cached.data, viewMode);
@@ -574,8 +574,9 @@ async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null) 
   try {
     let data, totalPages = 1, totalResults = 0;
     if (viewMode === 'films') {
-      const genreParam = genre ? `&genre=${encodeURIComponent(genre)}` : '';
-      const res  = await fetch(`${API_BASE}/films?country=${code}&page=${page}&sort=${sortDir}${genreParam}`);
+      const genreParam  = genre  ? `&genre=${encodeURIComponent(genre)}`   : '';
+      const decadeParam = decade ? `&decade=${decade}`                      : '';
+      const res  = await fetch(`${API_BASE}/films?country=${code}&page=${page}&sort=${sortDir}${genreParam}${decadeParam}`);
       if (!res.ok) throw new Error('films HTTP ' + res.status);
       const json = await res.json();
       data         = json.films        || [];
@@ -1335,9 +1336,12 @@ function _actorType(person){
 }
 
 // ── Apply sort + year + category filter to an items array ──
-function _applyControls(items, isFilms, isDirectors, sortDir, yearFilter, catFilter){
+function _applyControls(items, isFilms, isDirectors, sortDir, decadeFilter, catFilter){
   let out = [...items];
-  if(yearFilter!=null) out=out.filter(x=>_yearOf(x,isFilms)===yearFilter);
+  if(decadeFilter!=null) out=out.filter(x=>{
+    const y=_yearOf(x,isFilms);
+    return y!=null && y>=decadeFilter && y<=decadeFilter+9;
+  });
   if(catFilter!=null){
     if(isFilms)        out=out.filter(f=>f.genre===catFilter);
     else if(isDirectors) out=out.filter(d=>_dirEra(d)===catFilter);
@@ -1376,17 +1380,24 @@ function _renderCards(items, isFilms, isDirectors){
   return h;
 }
 
-// ── Full static year range for the dropdown ──────────────────
-// Films: 1895 → currentYear   |   People: 1850 → currentYear
-// Independent of what is currently loaded — covers the full history of cinema.
-function _yearOptions(isFilms, yearFilter){
-  const now   = new Date().getFullYear();
-  const start = isFilms ? 1895 : 1850;
-  const opts  = [];
-  for(let y = now; y >= start; y--){
-    opts.push(`<option value="${y}"${yearFilter===y?' selected':''}>${y}</option>`);
-  }
-  return opts.join('');
+// ── Decade chips ─────────────────────────────────────────────
+// Mostra un chip per ogni decade presente negli item caricati.
+// Solo decadi con almeno un item vengono mostrate.
+function _buildDecadeChips(code, st, isFilms){
+  const presentDecades = new Set(
+    st.allItems.map(item=>{
+      const y=_yearOf(item,isFilms);
+      return y ? Math.floor(y/10)*10 : null;
+    }).filter(d=>d!==null)
+  );
+  if(presentDecades.size===0) return '';
+  const decades=[...presentDecades].sort((a,b)=>a-b);
+  const active=st.decadeFilter;
+  const all=`<button class="tt-cat-chip${active===null?' active':''}" onclick="filterTooltipDecade('${code}',null)">Tutti</button>`;
+  const chips=decades.map(d=>
+    `<button class="tt-cat-chip${active===d?' active':''}" onclick="filterTooltipDecade('${code}',${d})">${d}</button>`
+  ).join('');
+  return `<div class="tt-cat-row"><div class="tt-cat-label">Anni</div>${all}${chips}</div>`;
 }
 
 // ── Category chips (genre / movement / actor-type) ──
@@ -1421,19 +1432,14 @@ function _buildCatChips(code, st, isFilms, isDirectors){
   return `<div class="tt-cat-row"><div class="tt-cat-label">${label}</div>${all}${chips}</div>`;
 }
 
-// ── Controls bar (sort btn + year dropdown) ──
+// ── Controls bar (solo bottone di ordinamento) ──
 function _buildControls(code, st, isFilms, isDirectors){
-  const yearLabel = isFilms ? 'Anno uscita' : 'Anno nascita';
-  const sortIcon  = st.sortDir==='desc' ? '↓' : '↑';
-  const sortTip   = st.sortDir==='desc'
+  const sortIcon = st.sortDir==='desc' ? '↓' : '↑';
+  const sortTip  = st.sortDir==='desc'
     ? (isFilms ? 'Più recenti prima' : 'Più giovani prima')
     : (isFilms ? 'Più vecchi prima (dal 1895)' : 'Più anziani prima');
   return `<div class="tt-controls">
     <button class="tt-ctrl-btn" onclick="toggleTooltipSort('${code}')" title="Inverti ordine">${sortIcon} ${sortTip}</button>
-    <span class="tt-ctrl-label">${yearLabel}:</span>
-    <select class="tt-ctrl-select" onchange="filterTooltipYear('${code}',this.value?+this.value:null)">
-      <option value="">Tutti gli anni</option>${_yearOptions(isFilms, st.yearFilter)}
-    </select>
   </div>`;
 }
 
@@ -1454,21 +1460,25 @@ function _refreshCards(code){
   if(!st) return;
   const isFilms     = st.mode==='films';
   const isDirectors = st.mode==='directors';
-  const visible     = _applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.yearFilter, st.catFilter);
+  const visible     = _applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.decadeFilter, st.catFilter);
   const cardsEl     = document.getElementById('tt-cards');
   const moreEl      = document.getElementById('tt-load-more');
   if(cardsEl) cardsEl.innerHTML = _renderCards(visible, isFilms, isDirectors);
   if(moreEl)  moreEl.outerHTML  = _loadMoreBtn(code, st);
   else if(cardsEl) cardsEl.insertAdjacentHTML('afterend', _loadMoreBtn(code, st));
-  // Refresh year dropdown
-  const ctrlEl=document.querySelector('.tt-controls select');
-  if(ctrlEl) ctrlEl.innerHTML=`<option value="">Tutti gli anni</option>`+_yearOptions(isFilms, st.yearFilter);
-  // Refresh category chips (active state)
-  // Films: usa tmdbGenre (filtro lato TMDB). Registi/Attori: usa catFilter (filtro client-side).
-  const activeFilter = (st.mode==='films') ? st.tmdbGenre : st.catFilter;
-  document.querySelectorAll('.tt-cat-chip').forEach(btn=>{
+
+  // Refresh category chips active state
+  // Films: tmdbGenre (filtro TMDB). Registi/Attori: catFilter (filtro client-side).
+  const activeFilter = isFilms ? st.tmdbGenre : st.catFilter;
+  document.querySelectorAll('.tt-cat-chip[onclick*="filterTooltipCat"]').forEach(btn=>{
     const cat=btn.textContent.trim();
     btn.classList.toggle('active', cat==='Tutti' ? activeFilter===null : activeFilter===cat);
+  });
+  // Refresh decade chips active state
+  document.querySelectorAll('.tt-cat-chip[onclick*="filterTooltipDecade"]').forEach(btn=>{
+    const d=parseInt(btn.textContent.trim(),10);
+    const isTutti=btn.textContent.trim()==='Tutti';
+    btn.classList.toggle('active', isTutti ? st.decadeFilter===null : st.decadeFilter===d);
   });
 }
 
@@ -1493,7 +1503,7 @@ async function buildPinnedTooltip(code){
 
   // Init state
   const stKey=`${viewMode}_${code}`;
-  _ttState[stKey]={ code, mode:viewMode, sortDir:'desc', yearFilter:null, catFilter:null,
+  _ttState[stKey]={ code, mode:viewMode, sortDir:'desc', decadeFilter:null, catFilter:null,
                     tmdbGenre:null, allItems:[...items], page:1, totalPages, totalResults };
   const st=_ttState[stKey];
 
@@ -1502,10 +1512,11 @@ async function buildPinnedTooltip(code){
     ? `Top ${items.length} su ${totalResults.toLocaleString('it-IT')} totali TMDB · ${c.continent.toUpperCase()}`
     : `${items.length} ${modeLabel} più attivi · ${c.continent.toUpperCase()}`;
 
-  const visible=_applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.yearFilter, st.catFilter);
+  const visible=_applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.decadeFilter, st.catFilter);
 
   let html=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${sub}</div></div><button class="modal-close" onclick="closePinnedTooltip()">✕</button></div>`;
   html+=_buildCatChips(code, st, isFilms, isDirectors);
+  html+=_buildDecadeChips(code, st, isFilms);
   html+=_buildControls(code, st, isFilms, isDirectors);
   html+=`<div class="tt-body"><div id="tt-cards">`;
   html+=items.length===0
@@ -1522,8 +1533,8 @@ async function buildPinnedTooltip(code){
 async function toggleTooltipSort(code){
   const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
   const newDir = st.sortDir==='desc' ? 'asc' : 'desc';
-  st.sortDir   = newDir;
-  st.yearFilter= null;
+  st.sortDir      = newDir;
+  st.decadeFilter = null;
 
   if(st.mode==='films'){
     // Reset loaded items and re-fetch page 1 with new API sort
@@ -1556,10 +1567,26 @@ async function toggleTooltipSort(code){
   }
 }
 
-// ── Public: filter by year ───────────────────────────────────
-function filterTooltipYear(code, year){
+// ── Public: filter by decade ─────────────────────────────────
+// Films: re-interroga TMDB con il range di date della decade.
+// Registi/Attori: filtro client-side per anno di nascita nel range.
+async function filterTooltipDecade(code, decade){
   const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
-  st.yearFilter = year!=null ? Number(year)||null : null;
+  st.decadeFilter = decade!=null ? Number(decade) : null;
+
+  if(st.mode==='films'){
+    const cardsEl=document.getElementById('tt-cards');
+    if(cardsEl) cardsEl.innerHTML=`<div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento${decade?' anni '+decade+'…':'…'}</span></div>`;
+    const moreEl=document.getElementById('tt-load-more');
+    if(moreEl) moreEl.remove();
+
+    const {data, totalPages, totalResults}=await fetchCountryData(code, 1, st.sortDir, st.tmdbGenre, st.decadeFilter);
+    if(selectedCode!==code) return;
+    st.allItems    =[...data];
+    st.page        =1;
+    st.totalPages  =totalPages;
+    st.totalResults=totalResults;
+  }
   _refreshCards(code);
 }
 
@@ -1580,8 +1607,8 @@ async function filterTooltipCat(code, cat){
     const moreEl=document.getElementById('tt-load-more');
     if(moreEl) moreEl.remove();
 
-    // Re-interroga TMDB (con o senza genere)
-    const {data, totalPages, totalResults}=await fetchCountryData(code, 1, st.sortDir, st.tmdbGenre);
+    // Re-interroga TMDB (con o senza genere, mantenendo decade attiva)
+    const {data, totalPages, totalResults}=await fetchCountryData(code, 1, st.sortDir, st.tmdbGenre, st.decadeFilter);
     if(selectedCode!==code) return;
     st.allItems    = [...data];
     st.totalPages  = totalPages;
@@ -1602,7 +1629,7 @@ async function loadMoreTooltip(code){
   const btnWrap=document.getElementById('tt-load-more');
   if(btnWrap) btnWrap.innerHTML=`<div class="tt-loading" style="padding:8px 0;justify-content:center"><div class="tt-spinner"></div><span>Caricamento…</span></div>`;
 
-  const {data:newItems}=await fetchCountryData(code, st.page+1, st.sortDir, st.tmdbGenre||null);
+  const {data:newItems}=await fetchCountryData(code, st.page+1, st.sortDir, st.tmdbGenre||null, st.decadeFilter||null);
   if(selectedCode!==code) return;
 
   st.page++;
