@@ -223,6 +223,21 @@
     .tt-ctrl-btn:hover { box-shadow:0 0 14px rgba(255,215,0,0.35); }
     @media(max-width:767px){ .tt-controls{padding:7px 12px;gap:6px} .tt-ctrl-btn{font-size:0.62rem;padding:4px 10px} }
 
+    /* ── TOOLTIP ACCORDIONS (filtri + anni) ── */
+    .tt-accordion { flex-shrink:0; border-top:1px solid rgba(255,215,0,0.08); }
+    .tt-accordion-hdr { width:100%; display:flex; align-items:center; justify-content:space-between; padding:8px 20px; background:none; border:none; cursor:pointer; font-family:var(--ff-mono); font-size:0.65rem; letter-spacing:0.18em; color:var(--text-dim); text-transform:uppercase; transition:color 0.2s; }
+    .tt-accordion-hdr:hover { color:var(--gold); }
+    .tt-acc-arrow { display:inline-block; transition:transform 0.24s ease; opacity:0.55; font-style:normal; }
+    .tt-accordion.open .tt-acc-arrow { transform:rotate(180deg); }
+    .tt-accordion-body { overflow:hidden; max-height:0; transition:max-height 0.3s ease; }
+    .tt-accordion.open .tt-accordion-body { max-height:360px; }
+    .tt-accordion .tt-cat-row { padding-top:2px; }
+    /* Sort button — always visible, full width */
+    .tt-sort-wrap { padding:8px 20px 10px; flex-shrink:0; border-top:1px solid rgba(255,215,0,0.12); }
+    .tt-sort-wrap .tt-ctrl-btn { width:100%; justify-content:center; }
+    @media(max-width:1099px){ .tt-accordion-hdr{padding:7px 16px} .tt-sort-wrap{padding:7px 16px 9px} }
+    @media(max-width:767px){ .tt-accordion-hdr{padding:6px 12px;font-size:0.61rem} .tt-sort-wrap{padding:6px 12px 8px} }
+
     /* ── API SPINNER ── */
     #api-spinner { position:fixed; top:72px; left:50%; transform:translateX(-50%); z-index:500; display:flex; align-items:center; gap:8px; background:rgba(7,9,15,0.92); border:1px solid rgba(255,215,0,0.3); border-radius:20px; padding:6px 14px 6px 10px; font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.14em; color:var(--gold); pointer-events:none; }
     .spinner-ring { width:14px; height:14px; border:2px solid rgba(255,215,0,0.2); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; }
@@ -1403,7 +1418,11 @@ function _buildDecadeChips(code, st, isFilms){
   const chips=decades.map(d=>
     `<button class="tt-cat-chip${active===d?' active':''}" onclick="filterTooltipDecade('${code}',${d})">${d}</button>`
   ).join('');
-  return `<div class="tt-cat-row"><div class="tt-cat-label">Anni per decadi</div>${all}${chips}</div>`;
+  const openClass=window.innerWidth>1099?' open':'';
+  return `<div class="tt-accordion${openClass}" id="tt-acc-dec-${code}">
+    <button class="tt-accordion-hdr" type="button" onclick="toggleTtAccordion('${code}','dec')"><span>Anni per decadi</span><i class="tt-acc-arrow">▾</i></button>
+    <div class="tt-accordion-body"><div class="tt-cat-row">${all}${chips}</div></div>
+  </div>`;
 }
 
 // ── Category chips (genre / movement / actor-type) ──
@@ -1435,17 +1454,21 @@ function _buildCatChips(code, st, isFilms, isDirectors){
   const chips = cats.map(c=>
     `<button class="tt-cat-chip${activeFilter===c?' active':''}" onclick="filterTooltipCat('${code}','${c.replace(/'/g,"\\'")}')"> ${c}</button>`
   ).join('');
-  return `<div class="tt-cat-row"><div class="tt-cat-label">${label}</div>${all}${chips}</div>`;
+  const openClass=window.innerWidth>1099?' open':'';
+  return `<div class="tt-accordion${openClass}" id="tt-acc-cat-${code}">
+    <button class="tt-accordion-hdr" type="button" onclick="toggleTtAccordion('${code}','cat')"><span>${label}</span><i class="tt-acc-arrow">▾</i></button>
+    <div class="tt-accordion-body"><div class="tt-cat-row">${all}${chips}</div></div>
+  </div>`;
 }
 
-// ── Controls bar (solo bottone di ordinamento) ──
+// ── Controls bar (solo bottone di ordinamento — sempre visibile, larghezza piena) ──
 function _buildControls(code, st, isFilms, isDirectors){
   const sortIcon = st.sortDir==='desc' ? '↓' : '↑';
   const sortTip  = st.sortDir==='desc'
     ? (isFilms ? 'Più recenti prima' : 'Più giovani prima')
     : (isFilms ? 'Più vecchi prima (dal 1800)' : 'Più anziani prima');
-  return `<div class="tt-controls">
-    <button class="tt-ctrl-btn" onclick="toggleTooltipSort('${code}')" title="Inverti ordine">${sortIcon} ${sortTip}</button>
+  return `<div class="tt-sort-wrap">
+    <button class="tt-ctrl-btn" id="tt-sort-btn" onclick="toggleTooltipSort('${code}')" title="Inverti ordine">${sortIcon} ${sortTip}</button>
   </div>`;
 }
 
@@ -1579,7 +1602,7 @@ async function toggleTooltipSort(code){
   _refreshCards(code);
 
   // Update button label
-  const btn=document.querySelector('.tt-controls .tt-ctrl-btn');
+  const btn=document.getElementById('tt-sort-btn');
   if(btn){
     const isFilms=st.mode==='films';
     const icon=newDir==='desc'?'↓':'↑';
@@ -1588,6 +1611,22 @@ async function toggleTooltipSort(code){
       :(isFilms?'Più vecchi prima (dal 1800)':'Più anziani prima');
     btn.textContent=`${icon} ${tip}`;
   }
+}
+
+// ── Accordion toggle (filtri + anni) ─────────────────────────
+// Desktop: i due accordion si aprono/chiudono indipendentemente.
+// Mobile/tablet (≤1099px): mutua esclusione — aprirne uno chiude l'altro.
+function toggleTtAccordion(code, type){
+  const isMobile = window.innerWidth <= 1099;
+  const thisEl   = document.getElementById(`tt-acc-${type}-${code}`);
+  if(!thisEl) return;
+  const otherType = type==='cat' ? 'dec' : 'cat';
+  const otherEl   = document.getElementById(`tt-acc-${otherType}-${code}`);
+  const willOpen  = !thisEl.classList.contains('open');
+  if(isMobile && willOpen && otherEl){
+    otherEl.classList.remove('open');
+  }
+  thisEl.classList.toggle('open');
 }
 
 // ── Public: filter by decade ─────────────────────────────────
