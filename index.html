@@ -143,6 +143,8 @@
     /* Shared progress bar base */
     .cc-bar, .nation-bar { height:2px; background:var(--border); border-radius:1px; overflow:hidden; }
     .nation-bar { width:100%; margin-top:3px; }
+    /* Flush legend-items in nations panel so right edge aligns with title/subtitle (modal padding = 20px) */
+    #country-list .legend-item { padding-left:0; padding-right:0; }
     .cc-fill, .nation-fill { height:100%; border-radius:1px; transition:width 0.6s ease; }
     .nation-fill { background:linear-gradient(90deg,#7b5600,#ffcc00); }
 
