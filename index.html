@@ -1377,17 +1377,16 @@ function _renderCards(items, isFilms, isDirectors){
 }
 
 // ── Decade chips ─────────────────────────────────────────────
-// Film: range fisso 1890→decade corrente (i dati TMDB coprono tutta la storia
-//   del cinema; non possiamo sapere quali decadi hanno film senza query extra).
+// Film: usa st.validDecades (precalcolate in buildPinnedTooltip con query
+//   parallele su TMDB) — mostra solo le decadi con almeno 1 risultato.
 // Registi/Attori: solo decadi effettivamente presenti negli item caricati
 //   (vengono caricati tutti in una volta, quindi il campione è completo).
 function _buildDecadeChips(code, st, isFilms){
-  const currentDecade = Math.floor(new Date().getFullYear()/10)*10;
   let decades;
   if(isFilms){
-    // Range statico: ogni decade dal 1890 ad oggi
-    decades=[];
-    for(let d=1890; d<=currentDecade; d+=10) decades.push(d);
+    // Usa solo le decadi validate (totalResults > 0 su TMDB)
+    if(!st.validDecades || st.validDecades.length===0) return '';
+    decades = st.validDecades;
   } else {
     // Calcolo dinamico dagli item caricati (birth year)
     const presentDecades=new Set(
@@ -1504,14 +1503,31 @@ async function buildPinnedTooltip(code){
   setTimeout(()=>ttEl.classList.add('tt-vis'),10);
   ttOv.classList.add('active');
 
-  // Fetch page 1 (always desc first — newest films at top)
-  const {data:items, totalPages, totalResults}=await fetchCountryData(code, 1, 'desc');
+  // Fetch page 1 AND (for films) decade validity checks — all in parallel.
+  // Decade checks: query TMDB for each candidate decade; keep only those with
+  // totalResults > 0 so we never show chips that lead to "Nessun risultato".
+  const page1Promise = fetchCountryData(code, 1, 'desc');
+  let validDecadesPromise = Promise.resolve(null);
+  if(isFilms){
+    const curDec = Math.floor(new Date().getFullYear()/10)*10;
+    const candidates = [];
+    for(let d=1890; d<=curDec; d+=10) candidates.push(d);
+    validDecadesPromise = Promise.all(
+      candidates.map(d =>
+        fetchCountryData(code, 1, 'desc', null, d).then(r => r.totalResults>0 ? d : null)
+      )
+    ).then(res => res.filter(d => d!==null));
+  }
+
+  const [{data:items, totalPages, totalResults}, validDecades] =
+    await Promise.all([page1Promise, validDecadesPromise]);
   if(selectedCode!==code) return;
 
   // Init state
   const stKey=`${viewMode}_${code}`;
   _ttState[stKey]={ code, mode:viewMode, sortDir:'desc', decadeFilter:null, catFilter:null,
-                    tmdbGenre:null, allItems:[...items], page:1, totalPages, totalResults };
+                    tmdbGenre:null, allItems:[...items], page:1, totalPages, totalResults,
+                    validDecades };   // null for people; filtered array for films
   const st=_ttState[stKey];
 
   // Subtitle
