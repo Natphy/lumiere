@@ -36,12 +36,17 @@
     /* ── HEADER ── */
     header { position:fixed; top:0; left:0; right:0; height:64px; background:transparent; display:flex; align-items:stretch; justify-content:space-between; padding:12px 20px; z-index:1100; }
     .logo { display:flex; align-items:center; gap:14px; }
-    .logo h1 { font-family:var(--ff-display); font-size:2.1rem; letter-spacing:0.06em; color:var(--gold); }
+    .logo h1 { font-family:var(--ff-display); font-size:2.5rem; letter-spacing:0.06em; color:var(--gold); }
     .logo .tagline { font-family:var(--ff-mono); font-size:0.58rem; color:var(--gold); opacity:0.65; letter-spacing:0.18em; text-transform:uppercase; }
     .header-btns { display:flex; gap:8px; align-items:stretch; }
+    .label-mob { display:none; }
+    @media(max-width:1099px) { .label-desk { display:none; } .label-mob { display:inline; } }
     .mode-btn { opacity:0.45; transition:opacity 0.25s; }
     .hdr-btn.mode-btn:hover, .update-btn.mode-btn:hover { opacity:0.75; }
     .hdr-btn.mode-btn.active, .update-btn.mode-btn.active { opacity:1; }
+    .panel-btn { opacity:0.45; transition:opacity 0.25s; }
+    .hdr-btn.panel-btn:hover { opacity:0.75; }
+    .hdr-btn.panel-btn.active { opacity:1; }
 
     /* Buttons — all share gold style */
     .hdr-btn, .update-btn { display:flex; align-items:center; justify-content:center; background:rgba(7,9,15,0.82); backdrop-filter:blur(6px); border:1px solid var(--gold); color:var(--gold); font-family:var(--ff-mono); font-size:0.82rem; letter-spacing:0.18em; padding:0 18px; cursor:pointer; text-transform:uppercase; border-radius:5px; position:relative; overflow:hidden; transition:color 0.25s,box-shadow 0.25s; }
@@ -57,30 +62,30 @@
     /* ── MODALS ── */
     .overlay { position:fixed; inset:0; background:var(--overlay-bg); backdrop-filter:blur(6px); z-index:2000; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.26s ease; }
     .overlay.open { opacity:1; pointer-events:auto; }
-    /* Entry animation — tutti i pannelli overlay */
-    .overlay .modal, .overlay .genre-modal-sm { transform:translateY(-14px) scale(0.98); transition:transform 0.22s ease; }
-    .overlay.open .modal, .overlay.open .genre-modal-sm { transform:translateY(0) scale(1); }
+    /* Entry animation — tutti i pannelli overlay (solo traslazione lieve, nessuna scala per non spostare l'hit area del bottone ✕) */
+    .overlay .modal, .overlay .genre-modal-sm { transform:translateY(-5px); transition:transform 0.22s ease; }
+    .overlay.open .modal, .overlay.open .genre-modal-sm { transform:translateY(0); }
 
     /* Shared panel chrome: .modal, .genre-modal-sm, .left-panel, .right-panel, #tooltip.pinned */
-    .modal, .genre-modal-sm, .left-panel, .right-panel, #tooltip.pinned {
+    .modal, .genre-modal-sm, .left-panel, #tooltip.pinned {
       background:var(--panel-bg); border:var(--panel-border); border-left:var(--panel-border-l); border-radius:var(--panel-radius); box-shadow:var(--panel-shadow);
     }
 
     .modal { width:82vw; height:82vh; display:flex; flex-direction:column; }
-    .modal-header { padding:16px 20px 14px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; }
-    #tooltip .tt-header { padding:16px 20px 14px; display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; }
-    .modal-title, #tooltip .tt-title { font-family:var(--ff-display); font-size:2.25rem; letter-spacing:0.08em; color:var(--gold); text-shadow:0 0 16px rgba(255,215,0,0.4); }
-    .modal-subtitle, #tooltip .tt-subtitle { font-family:var(--ff-mono); font-size:0.81rem; color:var(--text-dim); letter-spacing:0.18em; text-transform:uppercase; }
+    .modal-header { padding:16px 20px 14px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; position:relative; z-index:1; }
+    #tooltip .tt-header, .right-panel .tt-header { padding:16px 20px 14px; display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; position:relative; z-index:1; }
+    .modal-title, #tooltip .tt-title, .right-panel .tt-title { font-family:var(--ff-display); font-size:2.25rem; letter-spacing:0.08em; color:var(--gold); text-shadow:0 0 16px rgba(255,215,0,0.4); }
+    .modal-subtitle, #tooltip .tt-subtitle, .right-panel .tt-subtitle { font-family:var(--ff-mono); font-size:0.81rem; color:var(--text-dim); letter-spacing:0.18em; text-transform:uppercase; }
     .modal-subtitle { margin-top:2px; }
-    #tooltip .tt-title { margin-bottom:4px; }
+    #tooltip .tt-title, .right-panel .tt-title { margin-bottom:4px; }
     .modal-close { background:transparent; border:1px solid var(--border2); color:var(--text-dim); font-family:var(--ff-mono); font-size:0.975rem; letter-spacing:0.12em; padding:5px 12px; border-radius:5px; cursor:pointer; flex-shrink:0; pointer-events:auto; transition:color 0.25s,border-color 0.25s,box-shadow 0.25s; }
     .modal-close:hover { border-color:var(--gold); color:var(--gold); box-shadow:0 0 14px rgba(255,215,0,0.28); }
 
     /* Shared scrollable body */
-    .modal-body, #tooltip .tt-body { overflow-y:auto; padding:14px 20px 20px; flex:1; scrollbar-width:thin; scrollbar-color:var(--panel-scroll) transparent; }
-    .modal-body::-webkit-scrollbar, #tooltip .tt-body::-webkit-scrollbar { width:3px; }
+    .modal-body, #tooltip .tt-body, .right-panel .tt-body { overflow-y:auto; padding:14px 20px 20px; flex:1; scrollbar-width:thin; scrollbar-color:var(--panel-scroll) transparent; }
+    .modal-body::-webkit-scrollbar, #tooltip .tt-body::-webkit-scrollbar, .right-panel .tt-body::-webkit-scrollbar { width:3px; }
     .modal-body::-webkit-scrollbar-track-track { background:transparent; }
-    .modal-body::-webkit-scrollbar-thumb-thumb, #tooltip .tt-body::-webkit-scrollbar-thumb { background:var(--panel-scroll); border-radius:2px; }
+    .modal-body::-webkit-scrollbar-thumb-thumb, #tooltip .tt-body::-webkit-scrollbar-thumb, .right-panel .tt-body::-webkit-scrollbar-thumb { background:var(--panel-scroll); border-radius:2px; }
 
     .modal-section-divider { border:none; border-top:1px solid var(--border2); margin:8px 0 22px; }
     .app-description { margin-bottom:22px; }
@@ -123,9 +128,7 @@
     .canvas-wrapper { position:fixed; top:64px; left:0; right:0; bottom:34px; z-index:0; overflow:hidden; }
     #lumiere-canvas { position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair; }
 
-    /* ── RIGHT PANEL ── */
-    .right-panel { position:fixed; top:74px; right:10px; bottom:44px; width:300px; opacity:0; pointer-events:none; transform:translateX(10px); transition:opacity 0.26s ease,transform 0.22s ease; z-index:200; overflow-y:auto; padding:14px 12px; display:flex; flex-direction:column; gap:7px; }
-    .right-panel.open { opacity:1; pointer-events:auto; transform:translateX(0); }
+    /* ── RIGHT PANEL (rimosso — ora usa overlay modale come la guida) ── */
     .country-card { border:1px solid var(--border); padding:10px 12px 10px 14px; border-radius:5px; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; background:rgba(255,255,255,0.01); display:flex; flex-direction:column; gap:4px; min-height:58px; }
     .country-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
     .cc-europe::before  { background:var(--cyan); }
@@ -158,7 +161,7 @@
     #tooltip.pinned:not(.tt-vis) { opacity:0; transform:translateY(-14px) scale(0.98); }
     #tooltip.pinned.tt-vis { opacity:1; transform:translateY(0) scale(1); }
     /* .tt-close unificato in .modal-close */
-    #tooltip .tt-body { min-height:0; }
+    #tooltip .tt-body, .right-panel .tt-body { min-height:0; }
 
     /* Film & Actor cards in tooltip */
     .film-card, .actor-card { display:flex; flex-direction:column; border-bottom:1px solid rgba(26,35,56,0.55); }
@@ -195,26 +198,18 @@
     .flash { position:fixed; bottom:52px; left:50%; transform:translateX(-50%) translateY(8px); background:rgba(7,9,15,0.97); border:1px solid var(--gold); border-left:3px solid var(--gold); color:var(--text); font-family:var(--ff-mono); font-size:0.68rem; padding:10px 18px; z-index:500; border-radius:4px; box-shadow:0 0 25px rgba(255,215,0,0.15); animation:flashIn 4s forwards; }
     @keyframes flashIn { 0%{opacity:0;transform:translateX(-50%) translateY(12px)} 12%{opacity:1;transform:translateX(-50%) translateY(0)} 75%{opacity:1} 100%{opacity:0;transform:translateX(-50%) translateY(-4px)} }
 
-    /* ── EDGE TABS ── */
-    .edge-tab { position:fixed; top:calc(64px + (100vh - 64px - 34px) / 2); transform:translateY(-50%); z-index:210; display:flex; align-items:center; justify-content:center; background:rgba(7,9,15,0.82); backdrop-filter:blur(6px); border:1px solid var(--gold); color:var(--gold); font-size:1.1rem; cursor:pointer; border-radius:5px; overflow:hidden; width:38px; height:38px; transition:color 0.25s,box-shadow 0.25s; }
-    .edge-tab:hover { color:#fff; box-shadow:0 0 18px rgba(255,215,0,0.4); }
-    #edge-right.active { opacity:0; pointer-events:none; transition:opacity 0.2s ease; }
-    #edge-right { right:10px; }
-    @media(max-width:767px) { .edge-tab { top:calc(52px + (100vh - 52px - 28px) / 2); width:34px; height:34px; font-size:0.95rem; } }
-    @media(max-width:479px) { .edge-tab { top:calc(46px + (100vh - 46px - 28px) / 2); width:32px; height:32px; font-size:0.88rem; } }
+    /* ── EDGE TABS (removed — NAZIONI moved to header) ── */
 
-    /* ── PANEL OVERLAY ── */
-    #panel-overlay { position:fixed; inset:0; background:rgba(3,4,7,0.68); z-index:195; cursor:pointer; opacity:0; pointer-events:none; transition:opacity 0.26s ease; }
-    #panel-overlay.active { opacity:1; pointer-events:auto; }
+    /* ── PANEL OVERLAY (rimosso — nations usa overlay) ── */
 
     /* ── ZOOM HINT ── */
     #zoom-hint { position:fixed; bottom:46px; left:50%; transform:translateX(-50%) translateY(8px); background:rgba(7,9,15,0.90); border:1px solid rgba(255,215,0,0.28); color:var(--text-mid); font-family:var(--ff-mono); font-size:0.64rem; letter-spacing:0.10em; padding:5px 14px; border-radius:3px; pointer-events:none; z-index:320; opacity:0; transition:opacity 0.28s ease,transform 0.28s ease; }
     #zoom-hint.vis { opacity:1; transform:translateX(-50%) translateY(0); }
 
     /* ── RESPONSIVE ── */
-    @media(max-width:1099px) { .hdr-btn,.update-btn{font-size:0.82rem} footer{font-size:0.65rem} #tooltip{width:300px} .tt-title{font-size:1.95rem} .tt-subtitle{font-size:0.70rem} .film-year{font-size:1.43rem} .film-title{font-size:1.24rem} .film-genre-tag{font-size:0.65rem} .film-dir{font-size:0.70rem} .film-synopsis{font-size:1.07rem} .film-actors-line{font-size:0.68rem} .actor-name{font-size:1.24rem} .actor-years{font-size:1.11rem} .actor-bio{font-size:1.07rem} .actor-films-line{font-size:0.68rem} .panel-title{font-size:0.75rem} .legend-text{font-size:0.99rem} .legend-count{font-size:0.81rem} .cc-name{font-size:1.17rem} .cc-meta{font-size:0.70rem} .modal-title{font-size:2rem} .modal-subtitle{font-size:0.75rem} .modal-close{font-size:0.845rem} .app-desc-text{font-size:1.3rem} .guide-label{font-size:1.17rem} .guide-desc{font-size:1.17rem} .guide-icon{font-size:0.975rem} .sources-cat-title{font-size:0.75rem} .source-name{font-size:1.17rem} .source-url{font-size:0.73rem} .source-desc{font-size:1.105rem} }
-    @media(max-width:767px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .logo .tagline{display:none} .mode-num{display:none} #updateBtn{display:none} .hdr-btn,.update-btn{height:1.9rem;font-size:0.74rem;padding:0 12px;letter-spacing:0.12em} .left-panel,.right-panel{top:62px;bottom:38px;width:268px} footer{height:28px;font-size:0.66rem;padding:0 12px} .footer-status{display:none} .canvas-wrapper{top:52px;bottom:28px} #tooltip{width:min(300px,90vw)} }
-    @media(max-width:479px) { header{height:46px;padding:6px 8px;align-items:center} .logo h1{font-size:1.35rem} .mode-num{display:none} .left-panel,.right-panel{width:min(290px,90vw);top:56px;bottom:38px} .hdr-btn,.update-btn{height:1.35rem;padding:0 8px;font-size:0.70rem;letter-spacing:0.08em} footer{height:28px;padding:0 10px} .footer-status{display:none} .canvas-wrapper{top:46px;bottom:28px} #tooltip{width:min(290px,92vw)} }
+    @media(max-width:1099px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .mode-num{display:none} #updateBtn{display:none} .hdr-btn,.update-btn{height:1.9rem;font-size:0.74rem;padding:0 12px;letter-spacing:0.12em} .canvas-wrapper{top:52px} footer{font-size:0.65rem} #tooltip{width:300px} .tt-title{font-size:1.95rem} .tt-subtitle{font-size:0.70rem} .film-year{font-size:1.43rem} .film-title{font-size:1.24rem} .film-genre-tag{font-size:0.65rem} .film-dir{font-size:0.70rem} .film-synopsis{font-size:1.07rem} .film-actors-line{font-size:0.68rem} .actor-name{font-size:1.24rem} .actor-years{font-size:1.11rem} .actor-bio{font-size:1.07rem} .actor-films-line{font-size:0.68rem} .panel-title{font-size:0.75rem} .legend-text{font-size:0.99rem} .legend-count{font-size:0.81rem} .cc-name{font-size:1.17rem} .cc-meta{font-size:0.70rem} .modal-title{font-size:2rem} .modal-subtitle{font-size:0.75rem} .modal-close{font-size:0.845rem} .app-desc-text{font-size:1.3rem} .guide-label{font-size:1.17rem} .guide-desc{font-size:1.17rem} .guide-icon{font-size:0.975rem} .sources-cat-title{font-size:0.75rem} .source-name{font-size:1.17rem} .source-url{font-size:0.73rem} .source-desc{font-size:1.105rem} }
+    @media(max-width:767px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .left-panel{top:62px;bottom:38px;width:268px} footer{height:28px;font-size:0.66rem;padding:0 12px} .footer-status{display:none} .canvas-wrapper{top:52px;bottom:28px} #tooltip{width:min(300px,90vw)} }
+    @media(max-width:479px) { header{height:46px;padding:6px 8px;align-items:center} .logo h1{font-size:1.35rem} .mode-num{display:none} .left-panel{width:min(290px,90vw);top:56px;bottom:38px} .hdr-btn,.update-btn{height:1.35rem;padding:0 8px;font-size:0.70rem;letter-spacing:0.08em} footer{height:28px;padding:0 10px} .footer-status{display:none} .canvas-wrapper{top:46px;bottom:28px} #tooltip{width:min(290px,92vw)} }
 
     /* ── SCROLLBAR ── */
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:var(--surface)} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px} ::-webkit-scrollbar-thumb:hover{background:rgba(255,215,0,0.35)}
@@ -243,16 +238,14 @@
 <!-- ── HEADER ── -->
 <header>
   <div class="logo">
-    <div>
-      <h1>LUMIÈRE</h1>
-      <div class="tagline">L'Atlante del Cinema Mondiale · Dal 28 Dicembre 1895</div>
-    </div>
+    <h1>LUMIÈRE</h1>
   </div>
   <div class="header-btns">
     <button class="hdr-btn mode-btn active" id="mode-stat-films" onclick="setViewMode('films')">Film<span class="mode-num" id="stat-films"> – 0</span></button>
-    <button class="hdr-btn mode-btn" id="mode-stat-directors" onclick="setViewMode('directors')">Registi<span class="mode-num" id="stat-directors"> – 0</span></button>
+    <button class="hdr-btn mode-btn" id="mode-stat-directors" onclick="setViewMode('directors')"><span class="label-desk">Registi</span><span class="label-mob">Regia</span><span class="mode-num" id="stat-directors"> – 0</span></button>
     <button class="hdr-btn mode-btn" id="mode-stat-actors" onclick="setViewMode('actors')">Attori<span class="mode-num" id="stat-actors"> – 0</span></button>
-    <button class="hdr-btn mode-btn" id="guideBtn" onclick="openGuide()">GUIDA</button>
+    <button class="hdr-btn panel-btn" id="nationsBtn" onclick="togglePanel('right')">STATI<span class="mode-num" id="stat-nations"> – 0</span></button>
+    <button class="hdr-btn panel-btn" id="guideBtn" onclick="openGuide()">GUIDA</button>
     <button class="update-btn mode-btn" id="updateBtn" onclick="updateData()">AGGIORNA</button>
   </div>
 </header>
@@ -262,11 +255,11 @@
   <div class="modal">
     <div class="modal-header">
       <div><div class="modal-title">GUIDA</div><div class="modal-subtitle">LUMIÈRE — L'Atlante del Cinema Mondiale</div></div>
-      <button class="modal-close" onclick="closeGuide()">✕</button>
+      <button class="modal-close" type="button" onclick="closeGuide()">✕</button>
     </div>
     <div class="modal-body">
       <div class="app-description">
-        <div class="app-desc-text"><strong>Lumière</strong> è un atlante interattivo del cinema mondiale. Il mosaico visualizza le nazioni produttrici di cinema dalla nascita della settima arte (<strong>28 dicembre 1895</strong>) ai giorni nostri: ogni tessera rappresenta uno stato, la cui dimensione è proporzionale alla quantità di film, registi o attori presenti nel database.</div>
+        <div class="app-desc-text"><strong>Lumière</strong> è un atlante interattivo del cinema mondiale. Il mosaico visualizza le nazioni produttrici di cinema dalla nascita della settima arte ai giorni nostri: ogni tessera rappresenta uno stato, la cui dimensione è proporzionale alla quantità di film, registi o attori presenti nel database.</div>
       </div>
       <hr class="modal-section-divider">
       <div class="sources-category">
@@ -332,16 +325,18 @@
   </div>
 </div>
 
-<!-- ── EDGE TABS ── -->
-<div id="edge-right" class="edge-tab" onclick="togglePanel('right')" title="Nazioni">▥</div>
-
 <!-- ── CANVAS ── -->
 <div class="canvas-wrapper"><canvas id="lumiere-canvas"></canvas></div>
 
-<!-- ── RIGHT PANEL ── -->
-<div class="right-panel" id="rightPanel">
-  <div class="panel-title" id="rp-title">Nazioni</div>
-  <div id="country-list"></div>
+<!-- ── NATIONS MODAL ── -->
+<div class="overlay" id="nations-overlay" onclick="if(event.target===this)closeNations()">
+  <div class="modal">
+    <div class="modal-header">
+      <div><div class="modal-title">STATI</div><div class="modal-subtitle">Nazioni presenti nel grafo cinematografico</div></div>
+      <button class="modal-close" type="button" onclick="closeNations()">✕</button>
+    </div>
+    <div class="modal-body" id="country-list"></div>
+  </div>
 </div>
 
 <!-- ── FOOTER ── -->
@@ -351,7 +346,6 @@
   <div>LUMIÈRE v1.0 · <span>© <span id="footer-year">2026</span> Christian Steiner</span></div>
 </footer>
 
-<div id="panel-overlay" onclick="closeAllPanels()"></div>
 <div id="zoom-hint">SCORRI O PIZZICA PER NAVIGARE · DOPPIO CLICK PER RESET</div>
 <div id="tt-overlay" onclick="if(event.target===this)closePinnedTooltip()"></div>
 <div id="tooltip"></div>
@@ -1505,7 +1499,7 @@ async function buildPinnedTooltip(code){
   const totalFmt   = typeof tmdbTotal==='number' ? tmdbTotal.toLocaleString('it-IT') : tmdbTotal;
 
   // Immediate loading state
-  ttEl.innerHTML=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${c.flag} ${totalFmt} ${modeLabel} su TMDB · ${c.continent.toUpperCase()}</div></div><button class="modal-close" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body"><div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento dati TMDB…</span></div></div>`;
+  ttEl.innerHTML=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${c.flag} ${totalFmt} ${modeLabel} su TMDB · ${c.continent.toUpperCase()}</div></div><button class="modal-close" type="button" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body"><div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento dati TMDB…</span></div></div>`;
   ttEl.className='pinned';
   setTimeout(()=>ttEl.classList.add('tt-vis'),10);
   ttOv.classList.add('active');
@@ -1527,7 +1521,7 @@ async function buildPinnedTooltip(code){
 
   const visible=_applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.decadeFilter, st.catFilter);
 
-  let html=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${sub}</div></div><button class="modal-close" onclick="closePinnedTooltip()">✕</button></div>`;
+  let html=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${sub}</div></div><button class="modal-close" type="button" onclick="closePinnedTooltip()">✕</button></div>`;
   html+=_buildCatChips(code, st, isFilms, isDirectors);
   html+=_buildDecadeChips(code, st, isFilms);
   html+=_buildControls(code, st, isFilms, isDirectors);
@@ -1662,30 +1656,33 @@ function closePinnedTooltip(){
 // PANELS
 // ═══════════════════════════════════════════════════════
 function togglePanel(side){
-  const panel=document.getElementById('rightPanel');
-  const tab=document.getElementById('edge-right');
-  const isOpen=panel.classList.contains('open');
-  if(isOpen){
-    panel.classList.remove('open');
-    tab.classList.remove('active');
-    document.getElementById('panel-overlay').classList.remove('active');
+  const overlay=document.getElementById('nations-overlay');
+  const btn=document.getElementById('nationsBtn');
+  if(overlay.classList.contains('open')){
+    closeNations();
   } else {
-    panel.classList.add('open');
-    tab.classList.add('active');
-    document.getElementById('panel-overlay').classList.add('active');
+    closeGuide();
+    overlay.classList.add('open');
+    if(btn) btn.classList.add('active');
+    renderRightPanel();
   }
 }
 
+function closeNations(){
+  document.getElementById('nations-overlay').classList.remove('open');
+  const btn=document.getElementById('nationsBtn');
+  if(btn) btn.classList.remove('active');
+}
+
 function closeAllPanels(){
-  document.getElementById('rightPanel').classList.remove('open');
-  document.getElementById('edge-right').classList.remove('active');
-  document.getElementById('panel-overlay').classList.remove('active');
+  closeNations();
 }
 
 // ═══════════════════════════════════════════════════════
 // MODALS
 // ═══════════════════════════════════════════════════════
 function openGuide(){
+  closeNations();
   document.getElementById('guide-overlay').classList.add('open');
   document.getElementById('guideBtn').classList.add('active');
 }
@@ -1700,7 +1697,6 @@ function closeGuide(){
 function renderRightPanel(){
   const cl=document.getElementById('country-list');
   cl.innerHTML='';
-  document.getElementById('rp-title').textContent='Nazioni';
 
   const sorted=Object.entries(COUNTRIES).map(([code,c])=>{
     const count=getCountryCount(code);
@@ -1716,7 +1712,7 @@ function renderRightPanel(){
     const pct=Math.round(count/maxC*100);
     item.innerHTML=`<div class="legend-text">${c.name}</div><div class="legend-count">${count.toLocaleString('it-IT')}</div><div class="nation-bar"><div class="nation-fill" style="width:${pct}%"></div></div>`;
     item.style.flexWrap='wrap';
-    item.onclick=()=>selectCountry(code);
+    item.onclick=()=>{ closeNations(); selectCountry(code); };
     item.onmouseenter=()=>{hoveredCode=code;};
     item.onmouseleave=()=>{if(hoveredCode===code)hoveredCode=null;};
     cl.appendChild(item);
@@ -1751,6 +1747,9 @@ function updateStats(){
   document.getElementById('stat-films').textContent=fmt(totalFilms);
   document.getElementById('stat-directors').textContent=fmt(totalDirectors);
   document.getElementById('stat-actors').textContent=fmt(totalActors);
+  const totalNations=Object.keys(COUNTRY_STATS).filter(c=>COUNTRIES[c]).length;
+  const nEl=document.getElementById('stat-nations');
+  if(nEl) nEl.textContent=totalNations>0?' – '+totalNations:'';
   document.querySelectorAll('.mode-btn').forEach(el=>el.classList.remove('active'));
   const activeEl=document.getElementById('mode-stat-'+viewMode);
   if(activeEl) activeEl.classList.add('active');
@@ -1802,24 +1801,11 @@ window.addEventListener('resize',()=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(document.getElementById('guide-overlay').classList.contains('open')) closeGuide();
+    else if(document.getElementById('nations-overlay').classList.contains('open')) closeNations();
     else if(selectedCode) closePinnedTooltip();
   }
 });
 
-// Click-outside: close right panel when clicking away
-document.addEventListener('click',e=>{
-  const path=e.composedPath();
-  const inOverlay=path.some(el=>el.classList?.contains('overlay')||el.id==='tt-overlay'||el.id==='panel-overlay');
-  if(inOverlay) return;
-  const rp=document.getElementById('rightPanel');
-  const edgeR=document.getElementById('edge-right');
-  const inRight=path.some(el=>el===rp||el===edgeR);
-  if(rp.classList.contains('open')&&!inRight){
-    rp.classList.remove('open');
-    edgeR.classList.remove('active');
-    document.getElementById('panel-overlay').classList.remove('active');
-  }
-},false);
 
 // ═══════════════════════════════════════════════════════
 // INIT
