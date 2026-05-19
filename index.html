@@ -1101,7 +1101,7 @@ function draw(){
   Object.keys(COUNTRIES).forEach(code=>{
     if(!nodeHoverT[code]) nodeHoverT[code]=0;
     const target=code===activeCode?1:0;
-    nodeHoverT[code]+=(target-nodeHoverT[code])*0.14;
+    nodeHoverT[code]+=(target-nodeHoverT[code])*0.055;
   });
 
   // Update per-column hover lerps (width animation — slower for smooth column transitions)
@@ -1110,7 +1110,7 @@ function draw(){
     const bx=mosaicLayout[code].x;
     if(bandHoverT[bx]===undefined) bandHoverT[bx]=0;
     const target=bx===_hbx?1:0;
-    bandHoverT[bx]+=(target-bandHoverT[bx])*0.02;
+    bandHoverT[bx]+=(target-bandHoverT[bx])*0.012;
   });
 
   // Compute live layout with hover distortion, then draw
@@ -1175,7 +1175,7 @@ function startAutoMode(){
   autoTimer=setInterval(()=>{
     if(!autoMode) return;
     autoCode=pickNext();
-  }, 4000); // cambia tessera ogni 4 s
+  }, 6000); // cambia tessera ogni 6 s
 }
 
 function stopAutoMode(){
