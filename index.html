@@ -997,7 +997,7 @@ function drawTile(code){
   }
 
   /* ── Labels: country name (word-wrapped) + count centered in tile ── */
-  if(w>22&&h>14){
+  if(w>10&&h>8){
     const count=getCountryCount(code);  // from COUNTRY_STATS (live from TMDB)
     const showCount=h>46&&w>34;
 
@@ -1006,21 +1006,28 @@ function drawTile(code){
     ctx.textAlign='center';
     ctx.textBaseline='middle';
 
-    const nSz=Math.max(6,Math.min(w*0.13,h*0.15,12+hT*6));
-    const letterSp=Math.round(nSz*0.18);
+    const nSz=Math.max(7,Math.min(w*0.13,h*0.15,12+hT*6));
+    // Letter-spacing only when the tile is wide enough to absorb the extra width
+    const letterSp=w>30?Math.round(nSz*0.18):0;
     ctx.font=`${nSz}px 'Share Tech Mono',monospace`;
     if(ctx.letterSpacing!==undefined) ctx.letterSpacing=letterSp+'px';
     const hasLS=(ctx.letterSpacing!==undefined);
     const approxW=str=>ctx.measureText(str).width+(hasLS?0:str.length*letterSp);
 
-    // Split into words; truncate each word individually if too wide
-    const rawWords=c.name.toUpperCase().split(' ');
-    const lines=rawWords.map(word=>{
-      let nm=word;
-      while(approxW(nm)>w-8&&nm.length>2) nm=nm.slice(0,-1);
-      if(nm!==word) nm=nm.trimEnd()+'…';
-      return nm;
-    });
+    // For very narrow tiles use the ISO code (2 chars always fit);
+    // otherwise word-wrap the full name, truncating each word to the tile width.
+    let lines;
+    if(w<20){
+      lines=[code]; // e.g. "IT", "FR", "JP"
+    } else {
+      const rawWords=c.name.toUpperCase().split(' ');
+      lines=rawWords.map(word=>{
+        let nm=word;
+        while(approxW(nm)>w-6&&nm.length>1) nm=nm.slice(0,-1);
+        if(nm!==word) nm=nm.trimEnd()+'…';
+        return nm;
+      });
+    }
 
     const lineH=nSz*1.35;
     const nameBlockH=(lines.length-1)*lineH+nSz;
