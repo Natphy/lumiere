@@ -1031,12 +1031,12 @@ function drawTile(code){
       });
     }
 
-    const lineH=nSz*1.35;
+    const lineH=nSz*1.1;  // interlinea ridotta del 50% (era 1.35)
     const nameBlockH=(lines.length-1)*lineH+nSz;
 
-    // Count size also grows with hT; gap halved from previous nSz*2.0
+    // Count size also grows with hT; gap halved again (was nSz*1.0)
     const cSz=showCount?Math.max(8,Math.min(w*0.42, h*(0.18+hT*0.22), 100)):0;
-    const GAP=nSz*1.0; // 50% of previous gap (was nSz*2.0)
+    const GAP=nSz*0.5; // 50% di 1.0
     const totalBlockH=showCount?nameBlockH+GAP+cSz:nameBlockH;
     const blockStart=cy-totalBlockH/2;
 
