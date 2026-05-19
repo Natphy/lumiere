@@ -1529,7 +1529,7 @@ async function buildPinnedTooltip(code){
   const totalFmt   = typeof tmdbTotal==='number' ? tmdbTotal.toLocaleString('it-IT') : tmdbTotal;
 
   // Immediate loading state
-  ttEl.innerHTML=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${c.flag} ${totalFmt} ${modeLabel} su TMDB · ${c.continent.toUpperCase()}</div></div><button class="modal-close" type="button" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body"><div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento dati TMDB…</span></div></div>`;
+  ttEl.innerHTML=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${totalFmt} ${modeLabel} su TMDB · ${c.continent.toUpperCase()}</div></div><button class="modal-close" type="button" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body"><div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento dati TMDB…</span></div></div>`;
   ttEl.className='pinned';
   setTimeout(()=>ttEl.classList.add('tt-vis'),10);
   ttOv.classList.add('active');
