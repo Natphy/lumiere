@@ -1474,12 +1474,11 @@ function _buildCatChips(code, st, isFilms, isDirectors){
 
 // ── Controls bar (solo bottone di ordinamento — sempre visibile, larghezza piena) ──
 function _buildControls(code, st, isFilms, isDirectors){
-  const sortIcon = st.sortDir==='desc' ? '↓' : '↑';
-  const sortTip  = st.sortDir==='desc'
-    ? (isFilms ? 'Più recenti prima' : 'Più giovani prima')
-    : (isFilms ? 'Più vecchi prima (dal 1800)' : 'Più anziani prima');
+  const sortTip = st.sortDir==='desc'
+    ? (isFilms ? 'Ordina dai più vecchi' : 'Ordina dai più vecchi')
+    : (isFilms ? 'Ordina dai più giovani' : 'Ordina dai più giovani');
   return `<div class="tt-sort-wrap">
-    <button class="tt-ctrl-btn" id="tt-sort-btn" onclick="toggleTooltipSort('${code}')" title="Inverti ordine">${sortIcon} ${sortTip}</button>
+    <button class="tt-ctrl-btn" id="tt-sort-btn" onclick="toggleTooltipSort('${code}')" title="Inverti ordine">${sortTip}</button>
   </div>`;
 }
 
@@ -1616,11 +1615,10 @@ async function toggleTooltipSort(code){
   const btn=document.getElementById('tt-sort-btn');
   if(btn){
     const isFilms=st.mode==='films';
-    const icon=newDir==='desc'?'↓':'↑';
     const tip=newDir==='desc'
-      ?(isFilms?'Più recenti prima':'Più giovani prima')
-      :(isFilms?'Più vecchi prima (dal 1800)':'Più anziani prima');
-    btn.textContent=`${icon} ${tip}`;
+      ?(isFilms?'Ordina dai più vecchi':'Ordina dai più vecchi')
+      :(isFilms?'Ordina dai più giovani':'Ordina dai più giovani');
+    btn.textContent=tip;
   }
 }
 
