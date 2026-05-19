@@ -685,13 +685,10 @@ const bandHoverT = {}; // per-column lerp for width expansion (keyed by base x)
 
 // ── Auto-animation al lancio ──
 let autoMode        = true;   // true = animazione automatica attiva
-let autoCode        = null;   // tessera corrente (arco in corso)
-let autoCodeNext    = null;   // tessera successiva (inizia a salire mentre l'altra scende)
-let autoTimestamp   = 0;      // performance.now() dell'inizio dell'arco corrente
+let autoCode        = null;   // tessera correntemente "animata" in auto
+let autoTimer       = null;   // handle setInterval del ciclo auto
 let inactivityTimer = null;   // handle setTimeout: riavvia auto dopo 2s di inattività
-const AUTO_EXPAND_MULT  = 1.6;   // ingrandimento colonna in auto rispetto all'hover
-const AUTO_ARCH_MS      = 9000;  // durata dell'arco sinusoidale completo per ogni tessera
-const AUTO_OVERLAP      = 0.60;  // frazione di arco dopo la quale inizia la tessera successiva
+const AUTO_EXPAND_MULT  = 2.0;   // ingrandimento 2x rispetto all'hover
 const INACTIVITY_DELAY  = 2000;  // ms di inattività prima di riattivare l'auto
 
 // ═══════════════════════════════════════════════════════
@@ -1009,9 +1006,11 @@ function drawTile(code){
     ctx.textAlign='center';
     ctx.textBaseline='middle';
 
-    const nSz=Math.max(7,Math.min(w*0.13,h*0.15,12+hT*6));
-    // Letter-spacing only when the tile is wide enough to absorb the extra width
-    const letterSp=w>30?Math.round(nSz*0.18):0;
+    // Font sizes grow with hT via the live tile dimensions (w/h already reflect expansion).
+    // Height coefficients scale from rest to peak; absolute caps prevent excess on huge tiles.
+    const nSz=Math.max(7,Math.min(w*0.28, h*(0.10+hT*0.15), 60));
+    // Letter-spacing only for small fonts (large fonts need every pixel for characters)
+    const letterSp=nSz<11&&w>30?Math.round(nSz*0.18):0;
     ctx.font=`${nSz}px 'Share Tech Mono',monospace`;
     if(ctx.letterSpacing!==undefined) ctx.letterSpacing=letterSp+'px';
     const hasLS=(ctx.letterSpacing!==undefined);
@@ -1035,9 +1034,9 @@ function drawTile(code){
     const lineH=nSz*1.35;
     const nameBlockH=(lines.length-1)*lineH+nSz;
 
-    // Compute cSz now so we can use it for layout
-    const cSz=showCount?Math.max(8,Math.min(h*0.22,w*0.20,22+hT*14)):0;
-    const GAP=nSz*2.0; // gap between bottom of name block and top of count
+    // Count size also grows with hT; gap halved from previous nSz*2.0
+    const cSz=showCount?Math.max(8,Math.min(w*0.42, h*(0.18+hT*0.22), 100)):0;
+    const GAP=nSz*1.0; // 50% of previous gap (was nSz*2.0)
     const totalBlockH=showCount?nameBlockH+GAP+cSz:nameBlockH;
     const blockStart=cy-totalBlockH/2;
 
@@ -1100,75 +1099,20 @@ function draw(){
   // Codice "attivo": in auto mode è autoCode, altrimenti hoveredCode
   const activeCode = autoMode ? autoCode : hoveredCode;
 
-  // ── Per-tile hover lerps ─────────────────────────────────────
-  // Auto mode: ogni tessera segue un arco sin(0→π) — sale, raggiunge il picco,
-  //   scende — senza mai fermarsi. La tessera successiva inizia a salire quando
-  //   la corrente supera AUTO_OVERLAP dell'arco (è già in discesa), così
-  //   l'animazione è sempre in movimento e la transizione è fluida.
-  // Hover manuale: lerp classico verso la tessera puntata dal cursore.
-  if(autoMode){
-    const now=performance.now();
-    const elapsed=now-autoTimestamp;
-    const phA=elapsed/AUTO_ARCH_MS;          // fase arco corrente: 0→1
-    const hT_A=phA<1?Math.max(0,Math.sin(Math.PI*phA)):0;
+  // Update per-tile hover lerps (height animation)
+  Object.keys(COUNTRIES).forEach(code=>{
+    if(!nodeHoverT[code]) nodeHoverT[code]=0;
+    const target=code===activeCode?1:0;
+    nodeHoverT[code]+=(target-nodeHoverT[code])*0.055;
+  });
 
-    // Avvia la tessera successiva quando quella corrente supera la soglia di overlap
-    let hT_B=0;
-    if(phA>=AUTO_OVERLAP){
-      if(!autoCodeNext){
-        const codes=Object.keys(COUNTRIES);
-        const eligible=codes.filter(c=>c!==autoCode);
-        autoCodeNext=eligible[Math.floor(Math.random()*eligible.length)];
-      }
-      const phB=(elapsed-AUTO_ARCH_MS*AUTO_OVERLAP)/AUTO_ARCH_MS;
-      hT_B=phB<1?Math.max(0,Math.sin(Math.PI*phB)):0;
-    }
-
-    // Arco corrente completato: avanza al ciclo successivo
-    if(phA>=1){
-      const codes=Object.keys(COUNTRIES);
-      autoCode=autoCodeNext||(codes.filter(c=>c!==autoCode)[Math.floor(Math.random()*(codes.length-1))]);
-      autoCodeNext=null;
-      // La nuova tessera corrente era già (1-AUTO_OVERLAP) dentro il suo arco
-      autoTimestamp=now-AUTO_ARCH_MS*(1-AUTO_OVERLAP);
-    }
-
-    // Applica valori direttamente (la curva sin è già smooth; lerp solo per le inattive)
-    Object.keys(COUNTRIES).forEach(code=>{
-      if(!nodeHoverT[code]) nodeHoverT[code]=0;
-      if(code===autoCode)          nodeHoverT[code]=hT_A;
-      else if(code===autoCodeNext) nodeHoverT[code]=hT_B;
-      else                         nodeHoverT[code]+=(0-nodeHoverT[code])*0.06;
-    });
-  } else {
-    // Hover manuale
-    Object.keys(COUNTRIES).forEach(code=>{
-      if(!nodeHoverT[code]) nodeHoverT[code]=0;
-      const target=code===hoveredCode?1:0;
-      nodeHoverT[code]+=(target-nodeHoverT[code])*0.055;
-    });
-  }
-
-  // Update per-column hover lerps (width animation)
-  // Auto mode: la colonna segue direttamente il valore seno della tessera attiva
-  //   → larghezza e altezza si muovono dalla stessa sorgente, perfettamente sincroni.
-  // Hover manuale: lerp alla stessa velocità del nodeHoverT della tessera (0.05 ≈ 0.055)
-  //   → colonna e tessera si espandono insieme senza sfasamento visibile.
+  // Update per-column hover lerps (width animation — slower for smooth column transitions)
+  const _hbx=(activeCode&&mosaicLayout[activeCode])?mosaicLayout[activeCode].x:-1;
   Object.keys(mosaicLayout).forEach(code=>{
     const bx=mosaicLayout[code].x;
     if(bandHoverT[bx]===undefined) bandHoverT[bx]=0;
-    if(autoMode){
-      // Specchio diretto: stessa curva seno già calcolata per nodeHoverT
-      let target=0;
-      if(autoCode     && mosaicLayout[autoCode]?.x===bx)     target=nodeHoverT[autoCode]||0;
-      if(autoCodeNext && mosaicLayout[autoCodeNext]?.x===bx) target=Math.max(target,nodeHoverT[autoCodeNext]||0);
-      bandHoverT[bx]=target; // assegnazione diretta, nessun lag
-    } else {
-      // Hover manuale: lerp vicino a quello del nodeHoverT (0.055)
-      const hbx=(hoveredCode&&mosaicLayout[hoveredCode])?mosaicLayout[hoveredCode].x:-1;
-      const target=bx===hbx?1:0;
-      bandHoverT[bx]+=(target-bandHoverT[bx])*0.05;
-    }
+    const target=bx===_hbx?1:0;
+    bandHoverT[bx]+=(target-bandHoverT[bx])*0.012;
   });
 
   // Compute live layout with hover distortion, then draw
@@ -1221,24 +1165,26 @@ function resetView(){
 // EVENTS
 // ═══════════════════════════════════════════════════════
 // ── Modalità auto-animazione ──────────────────────────────
-// Timeline gestita in draw() con performance.now() — nessun setInterval.
-// Ogni tessera percorre un arco sin(0→π): zoom-in → picco → zoom-out.
-// La successiva inizia a salire prima che la corrente finisca (overlap),
-// garantendo un flusso continuo senza momenti di stasi.
 function startAutoMode(){
   const codes=Object.keys(COUNTRIES);
-  const eligible=codes.filter(c=>c!==autoCode);
+  // Scegli una tessera random (diversa da quella corrente)
+  function pickNext(){
+    const eligible=codes.filter(c=>c!==autoCode);
+    return eligible[Math.floor(Math.random()*eligible.length)];
+  }
   autoMode=true;
-  autoCode=eligible[Math.floor(Math.random()*eligible.length)];
-  autoCodeNext=null;
-  autoTimestamp=performance.now();
+  autoCode=pickNext();
+  autoTimer=setInterval(()=>{
+    if(!autoMode) return;
+    autoCode=pickNext();
+  }, 6000); // cambia tessera ogni 6 s
 }
 
 function stopAutoMode(){
   if(!autoMode) return;
   autoMode=false;
   autoCode=null;
-  autoCodeNext=null;
+  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
 }
 
 // Chiamata ad ogni evento di input: ferma l'auto immediatamente e
