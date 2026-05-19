@@ -1149,13 +1149,26 @@ function draw(){
     });
   }
 
-  // Update per-column hover lerps (width animation — slower for smooth column transitions)
-  const _hbx=(activeCode&&mosaicLayout[activeCode])?mosaicLayout[activeCode].x:-1;
+  // Update per-column hover lerps (width animation)
+  // Auto mode: la colonna segue direttamente il valore seno della tessera attiva
+  //   → larghezza e altezza si muovono dalla stessa sorgente, perfettamente sincroni.
+  // Hover manuale: lerp alla stessa velocità del nodeHoverT della tessera (0.05 ≈ 0.055)
+  //   → colonna e tessera si espandono insieme senza sfasamento visibile.
   Object.keys(mosaicLayout).forEach(code=>{
     const bx=mosaicLayout[code].x;
     if(bandHoverT[bx]===undefined) bandHoverT[bx]=0;
-    const target=bx===_hbx?1:0;
-    bandHoverT[bx]+=(target-bandHoverT[bx])*0.005;
+    if(autoMode){
+      // Specchio diretto: stessa curva seno già calcolata per nodeHoverT
+      let target=0;
+      if(autoCode     && mosaicLayout[autoCode]?.x===bx)     target=nodeHoverT[autoCode]||0;
+      if(autoCodeNext && mosaicLayout[autoCodeNext]?.x===bx) target=Math.max(target,nodeHoverT[autoCodeNext]||0);
+      bandHoverT[bx]=target; // assegnazione diretta, nessun lag
+    } else {
+      // Hover manuale: lerp vicino a quello del nodeHoverT (0.055)
+      const hbx=(hoveredCode&&mosaicLayout[hoveredCode])?mosaicLayout[hoveredCode].x:-1;
+      const target=bx===hbx?1:0;
+      bandHoverT[bx]+=(target-bandHoverT[bx])*0.05;
+    }
   });
 
   // Compute live layout with hover distortion, then draw
