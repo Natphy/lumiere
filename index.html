@@ -1478,7 +1478,7 @@ function _buildControls(code, st, isFilms, isDirectors){
 function _loadMoreBtn(code, st){
   if(st.mode!=='films' || st.page>=st.totalPages) return '';
   const remaining=(st.totalResults - st.allItems.length).toLocaleString('it-IT');
-  return `<div id="tt-load-more" class="tt-sort-wrap" style="border-top:none;padding-top:4px">
+  return `<div id="tt-load-more" style="padding:4px 0 0">
     <button class="tt-ctrl-btn" style="width:100%;justify-content:center" onclick="loadMoreTooltip('${code}')">
       CARICA ALTRI 20 ▾ &nbsp;<span style="opacity:0.45">(${remaining} rimanenti su TMDB)</span>
     </button>
