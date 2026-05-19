@@ -689,10 +689,9 @@ let autoCode        = null;   // tessera corrente (arco in corso)
 let autoCodeNext    = null;   // tessera successiva (inizia a salire mentre l'altra scende)
 let autoTimestamp   = 0;      // performance.now() dell'inizio dell'arco corrente
 let inactivityTimer = null;   // handle setTimeout: riavvia auto dopo 2s di inattività
-const AUTO_EXPAND_MULT  = 2.0;   // ingrandimento colonna in auto rispetto all'hover
-const AUTO_ARCH_MS      = 5000;  // durata dell'arco sinusoidale completo per ogni tessera
-const AUTO_OVERLAP      = 0.62;  // frazione di arco dopo la quale inizia la tessera successiva
-                                 // (0.62 → la prossima parte quando la corrente è al ~80% della discesa)
+const AUTO_EXPAND_MULT  = 1.6;   // ingrandimento colonna in auto rispetto all'hover
+const AUTO_ARCH_MS      = 9000;  // durata dell'arco sinusoidale completo per ogni tessera
+const AUTO_OVERLAP      = 0.60;  // frazione di arco dopo la quale inizia la tessera successiva
 const INACTIVITY_DELAY  = 2000;  // ms di inattività prima di riattivare l'auto
 
 // ═══════════════════════════════════════════════════════
@@ -1139,7 +1138,7 @@ function draw(){
       if(!nodeHoverT[code]) nodeHoverT[code]=0;
       if(code===autoCode)          nodeHoverT[code]=hT_A;
       else if(code===autoCodeNext) nodeHoverT[code]=hT_B;
-      else                         nodeHoverT[code]+=(0-nodeHoverT[code])*0.12;
+      else                         nodeHoverT[code]+=(0-nodeHoverT[code])*0.06;
     });
   } else {
     // Hover manuale
@@ -1156,7 +1155,7 @@ function draw(){
     const bx=mosaicLayout[code].x;
     if(bandHoverT[bx]===undefined) bandHoverT[bx]=0;
     const target=bx===_hbx?1:0;
-    bandHoverT[bx]+=(target-bandHoverT[bx])*0.012;
+    bandHoverT[bx]+=(target-bandHoverT[bx])*0.005;
   });
 
   // Compute live layout with hover distortion, then draw
