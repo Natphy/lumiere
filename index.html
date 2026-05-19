@@ -685,10 +685,13 @@ const bandHoverT = {}; // per-column lerp for width expansion (keyed by base x)
 
 // ── Auto-animation al lancio ──
 let autoMode        = true;   // true = animazione automatica attiva
-let autoCode        = null;   // tessera correntemente "animata" in auto
-let autoTimer       = null;   // handle setInterval del ciclo auto
+let autoCode        = null;   // tessera corrente (in hold o in uscita)
+let autoCodeNext    = null;   // tessera in arrivo (durante la transizione)
+let autoTimestamp   = 0;      // performance.now() dell'inizio del ciclo corrente
 let inactivityTimer = null;   // handle setTimeout: riavvia auto dopo 2s di inattività
-const AUTO_EXPAND_MULT  = 2.0;   // ingrandimento 2x rispetto all'hover
+const AUTO_EXPAND_MULT  = 2.0;   // ingrandimento colonna in auto rispetto all'hover
+const AUTO_HOLD_MS      = 4500;  // ms in cui la tessera rimane espansa al massimo
+const AUTO_TRANS_MS     = 1500;  // ms della transizione cross-dissolve
 const INACTIVITY_DELAY  = 2000;  // ms di inattività prima di riattivare l'auto
 
 // ═══════════════════════════════════════════════════════
@@ -1097,12 +1100,53 @@ function draw(){
   // Codice "attivo": in auto mode è autoCode, altrimenti hoveredCode
   const activeCode = autoMode ? autoCode : hoveredCode;
 
-  // Update per-tile hover lerps (height animation)
-  Object.keys(COUNTRIES).forEach(code=>{
-    if(!nodeHoverT[code]) nodeHoverT[code]=0;
-    const target=code===activeCode?1:0;
-    nodeHoverT[code]+=(target-nodeHoverT[code])*0.055;
-  });
+  // ── Per-tile hover lerps ─────────────────────────────────────
+  // Auto mode: timeline continua basata su performance.now().
+  //   La tessera corrente (autoCode) segue la curva 1→0 durante la transizione,
+  //   mentre la prossima (autoCodeNext) segue 0→1 in modo sincronizzato —
+  //   cross-dissolve senza blocchi né momenti "a vuoto".
+  // Hover manuale: lerp classico verso la tessera puntata dal cursore.
+  if(autoMode){
+    const now=performance.now();
+    const elapsed=now-autoTimestamp;
+
+    // Calcolo della curva di blend (smoothstep tra hold e fine transizione)
+    let fromVal=1, toVal=0;
+    if(elapsed>=AUTO_HOLD_MS){
+      // Prima volta che entriamo nella fase di transizione: scegli la prossima tessera
+      if(!autoCodeNext){
+        const codes=Object.keys(COUNTRIES);
+        const eligible=codes.filter(c=>c!==autoCode);
+        autoCodeNext=eligible[Math.floor(Math.random()*eligible.length)];
+      }
+      const t=Math.min(1,(elapsed-AUTO_HOLD_MS)/AUTO_TRANS_MS);
+      const eased=t*t*(3-2*t); // smoothstep
+      fromVal=1-eased;
+      toVal=eased;
+      // Transizione completata: avanza al prossimo ciclo
+      if(t>=1){
+        autoCode=autoCodeNext;
+        autoCodeNext=null;
+        autoTimestamp=now;
+      }
+    }
+
+    Object.keys(COUNTRIES).forEach(code=>{
+      if(!nodeHoverT[code]) nodeHoverT[code]=0;
+      let target=0;
+      if(code===autoCode)     target=fromVal;
+      else if(code===autoCodeNext) target=toVal;
+      // Lerp veloce per inseguire i valori eased senza lag percepibile
+      nodeHoverT[code]+=(target-nodeHoverT[code])*0.22;
+    });
+  } else {
+    // Hover manuale
+    Object.keys(COUNTRIES).forEach(code=>{
+      if(!nodeHoverT[code]) nodeHoverT[code]=0;
+      const target=code===hoveredCode?1:0;
+      nodeHoverT[code]+=(target-nodeHoverT[code])*0.055;
+    });
+  }
 
   // Update per-column hover lerps (width animation — slower for smooth column transitions)
   const _hbx=(activeCode&&mosaicLayout[activeCode])?mosaicLayout[activeCode].x:-1;
@@ -1163,26 +1207,22 @@ function resetView(){
 // EVENTS
 // ═══════════════════════════════════════════════════════
 // ── Modalità auto-animazione ──────────────────────────────
+// La timeline è gestita interamente in draw() tramite performance.now():
+// nessun setInterval, transizione continua senza salti.
 function startAutoMode(){
   const codes=Object.keys(COUNTRIES);
-  // Scegli una tessera random (diversa da quella corrente)
-  function pickNext(){
-    const eligible=codes.filter(c=>c!==autoCode);
-    return eligible[Math.floor(Math.random()*eligible.length)];
-  }
+  const eligible=codes.filter(c=>c!==autoCode);
   autoMode=true;
-  autoCode=pickNext();
-  autoTimer=setInterval(()=>{
-    if(!autoMode) return;
-    autoCode=pickNext();
-  }, 6000); // cambia tessera ogni 6 s
+  autoCode=eligible[Math.floor(Math.random()*eligible.length)];
+  autoCodeNext=null;
+  autoTimestamp=performance.now();
 }
 
 function stopAutoMode(){
   if(!autoMode) return;
   autoMode=false;
   autoCode=null;
-  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
+  autoCodeNext=null;
 }
 
 // Chiamata ad ogni evento di input: ferma l'auto immediatamente e
