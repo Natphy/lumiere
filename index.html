@@ -685,13 +685,14 @@ const bandHoverT = {}; // per-column lerp for width expansion (keyed by base x)
 
 // ── Auto-animation al lancio ──
 let autoMode        = true;   // true = animazione automatica attiva
-let autoCode        = null;   // tessera corrente (in hold o in uscita)
-let autoCodeNext    = null;   // tessera in arrivo (durante la transizione)
-let autoTimestamp   = 0;      // performance.now() dell'inizio del ciclo corrente
+let autoCode        = null;   // tessera corrente (arco in corso)
+let autoCodeNext    = null;   // tessera successiva (inizia a salire mentre l'altra scende)
+let autoTimestamp   = 0;      // performance.now() dell'inizio dell'arco corrente
 let inactivityTimer = null;   // handle setTimeout: riavvia auto dopo 2s di inattività
 const AUTO_EXPAND_MULT  = 2.0;   // ingrandimento colonna in auto rispetto all'hover
-const AUTO_HOLD_MS      = 4500;  // ms in cui la tessera rimane espansa al massimo
-const AUTO_TRANS_MS     = 1500;  // ms della transizione cross-dissolve
+const AUTO_ARCH_MS      = 5000;  // durata dell'arco sinusoidale completo per ogni tessera
+const AUTO_OVERLAP      = 0.62;  // frazione di arco dopo la quale inizia la tessera successiva
+                                 // (0.62 → la prossima parte quando la corrente è al ~80% della discesa)
 const INACTIVITY_DELAY  = 2000;  // ms di inattività prima di riattivare l'auto
 
 // ═══════════════════════════════════════════════════════
@@ -1101,43 +1102,44 @@ function draw(){
   const activeCode = autoMode ? autoCode : hoveredCode;
 
   // ── Per-tile hover lerps ─────────────────────────────────────
-  // Auto mode: timeline continua basata su performance.now().
-  //   La tessera corrente (autoCode) segue la curva 1→0 durante la transizione,
-  //   mentre la prossima (autoCodeNext) segue 0→1 in modo sincronizzato —
-  //   cross-dissolve senza blocchi né momenti "a vuoto".
+  // Auto mode: ogni tessera segue un arco sin(0→π) — sale, raggiunge il picco,
+  //   scende — senza mai fermarsi. La tessera successiva inizia a salire quando
+  //   la corrente supera AUTO_OVERLAP dell'arco (è già in discesa), così
+  //   l'animazione è sempre in movimento e la transizione è fluida.
   // Hover manuale: lerp classico verso la tessera puntata dal cursore.
   if(autoMode){
     const now=performance.now();
     const elapsed=now-autoTimestamp;
+    const phA=elapsed/AUTO_ARCH_MS;          // fase arco corrente: 0→1
+    const hT_A=phA<1?Math.max(0,Math.sin(Math.PI*phA)):0;
 
-    // Calcolo della curva di blend (smoothstep tra hold e fine transizione)
-    let fromVal=1, toVal=0;
-    if(elapsed>=AUTO_HOLD_MS){
-      // Prima volta che entriamo nella fase di transizione: scegli la prossima tessera
+    // Avvia la tessera successiva quando quella corrente supera la soglia di overlap
+    let hT_B=0;
+    if(phA>=AUTO_OVERLAP){
       if(!autoCodeNext){
         const codes=Object.keys(COUNTRIES);
         const eligible=codes.filter(c=>c!==autoCode);
         autoCodeNext=eligible[Math.floor(Math.random()*eligible.length)];
       }
-      const t=Math.min(1,(elapsed-AUTO_HOLD_MS)/AUTO_TRANS_MS);
-      const eased=t*t*(3-2*t); // smoothstep
-      fromVal=1-eased;
-      toVal=eased;
-      // Transizione completata: avanza al prossimo ciclo
-      if(t>=1){
-        autoCode=autoCodeNext;
-        autoCodeNext=null;
-        autoTimestamp=now;
-      }
+      const phB=(elapsed-AUTO_ARCH_MS*AUTO_OVERLAP)/AUTO_ARCH_MS;
+      hT_B=phB<1?Math.max(0,Math.sin(Math.PI*phB)):0;
     }
 
+    // Arco corrente completato: avanza al ciclo successivo
+    if(phA>=1){
+      const codes=Object.keys(COUNTRIES);
+      autoCode=autoCodeNext||(codes.filter(c=>c!==autoCode)[Math.floor(Math.random()*(codes.length-1))]);
+      autoCodeNext=null;
+      // La nuova tessera corrente era già (1-AUTO_OVERLAP) dentro il suo arco
+      autoTimestamp=now-AUTO_ARCH_MS*(1-AUTO_OVERLAP);
+    }
+
+    // Applica valori direttamente (la curva sin è già smooth; lerp solo per le inattive)
     Object.keys(COUNTRIES).forEach(code=>{
       if(!nodeHoverT[code]) nodeHoverT[code]=0;
-      let target=0;
-      if(code===autoCode)     target=fromVal;
-      else if(code===autoCodeNext) target=toVal;
-      // Lerp veloce per inseguire i valori eased senza lag percepibile
-      nodeHoverT[code]+=(target-nodeHoverT[code])*0.22;
+      if(code===autoCode)          nodeHoverT[code]=hT_A;
+      else if(code===autoCodeNext) nodeHoverT[code]=hT_B;
+      else                         nodeHoverT[code]+=(0-nodeHoverT[code])*0.12;
     });
   } else {
     // Hover manuale
@@ -1207,8 +1209,10 @@ function resetView(){
 // EVENTS
 // ═══════════════════════════════════════════════════════
 // ── Modalità auto-animazione ──────────────────────────────
-// La timeline è gestita interamente in draw() tramite performance.now():
-// nessun setInterval, transizione continua senza salti.
+// Timeline gestita in draw() con performance.now() — nessun setInterval.
+// Ogni tessera percorre un arco sin(0→π): zoom-in → picco → zoom-out.
+// La successiva inizia a salire prima che la corrente finisca (overlap),
+// garantendo un flusso continuo senza momenti di stasi.
 function startAutoMode(){
   const codes=Object.keys(COUNTRIES);
   const eligible=codes.filter(c=>c!==autoCode);
