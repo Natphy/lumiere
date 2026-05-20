@@ -111,7 +111,7 @@ module.exports = async function handler(req, res) {
         toYear >= todayYear ? today : `${toYear}-12-31`;
     } else {
       discoverParams['primary_release_date.lte'] = today;        // no future releases
-      discoverParams['primary_release_date.gte'] = '1888-01-01'; // from the dawn of cinema
+      discoverParams['primary_release_date.gte'] = '1800-01-01'; // cover all of TMDB history
     }
 
     const discover = await tmdb('/discover/movie', discoverParams);
