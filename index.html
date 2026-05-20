@@ -831,11 +831,42 @@ function getFilteredDirectors(code){
   return COUNTRY_DIRECTORS[code] || [];
 }
 
-// Tile is dimmed when its cinema started after the selected range end (timeTo).
+// Tile is dimmed when the country's cinema started after the selected timeTo.
 // Full range = modeDecadeMin() → TL_MAX means no filter active.
+//
+// Priority for "cinema start year":
+//   1. COUNTRY_STATS[code].filmStart  — TMDB-sourced, same data as tooltip decade chips
+//   2. CINEMA_START[code]             — hardcoded historical fallback
+//   3. 1895                           — global default
+//
+// For directors/actors modes the tooltip uses `born` years; filmStart is a
+// reasonable proxy (directors/actors were active when their country's films were made).
+// Progressive refinement: if the country's people data is already loaded we use
+// the actual minimum born year from that cache for better accuracy.
 function isDimmed(code){
   if(timeFrom<=modeDecadeMin() && timeTo>=TL_MAX) return false;
-  const start=CINEMA_START[code]||1895;
+
+  let start;
+  const s=COUNTRY_STATS[code]||{};
+
+  if(viewMode==='films'){
+    // TMDB-accurate: year of the oldest film with vote_count ≥ 1
+    start=s.filmStart||CINEMA_START[code]||1895;
+  } else {
+    // People modes: use minimum born year from already-loaded person cache,
+    // otherwise fall back to filmStart (active era ≈ born era for the purpose
+    // of coarse mosaic filtering).
+    const people=viewMode==='directors'
+      ? (COUNTRY_DIRECTORS[code]||[])
+      : (COUNTRY_ACTORS[code]||[]);
+    const bornYears=people.map(p=>p.born).filter(y=>y&&y>1800&&y<2026);
+    if(bornYears.length){
+      start=Math.min(...bornYears);
+    } else {
+      start=s.filmStart||CINEMA_START[code]||1895;
+    }
+  }
+
   return start>timeTo;
 }
 
@@ -2066,18 +2097,32 @@ function initTimeline(){
   updatePos();
 }
 
-// Fetch earliest years from /api/earliest, update tlMinByMode, then
-// reposition the left handle to the new minimum for the current mode.
+// Derive earliest years and update tlMinByMode, then reposition left handle.
+// Films: computed from COUNTRY_STATS.filmStart (already loaded, no extra API call).
+// Directors/actors: from /api/earliest (birth years via TMDB person detail).
 async function fetchEarliestYears(){
   try {
-    const cached=cacheGet('earliest');
-    if(cached){ tlMinByMode=cached; applyTimelineBounds(); return; }
-    const data=await fetch(`${API_BASE}/earliest`).then(r=>r.json());
-    if(data && typeof data.films==='number'){
-      tlMinByMode={ films:data.films, directors:data.directors, actors:data.actors };
-      cacheSet('earliest',tlMinByMode);
-      applyTimelineBounds();
+    // ── Films: global minimum of all per-country filmStart values ──
+    const filmStarts=Object.values(COUNTRY_STATS)
+      .map(s=>s.filmStart).filter(y=>y&&y>1800&&y<2026);
+    const filmsMin=filmStarts.length?Math.min(...filmStarts):null;
+
+    // ── Directors/actors: birth years from /api/earliest (cached 24 h) ──
+    let earliestData=cacheGet('earliest_people');
+    if(!earliestData){
+      const resp=await fetch(`${API_BASE}/earliest`).then(r=>r.json()).catch(()=>null);
+      if(resp && typeof resp.directors==='number'){
+        earliestData=resp;
+        cacheSet('earliest_people', earliestData);
+      }
     }
+
+    tlMinByMode={
+      films    : filmsMin          || (earliestData?.films)     || TL_MIN,
+      directors: earliestData?.directors || TL_MIN,
+      actors   : earliestData?.actors    || TL_MIN,
+    };
+    applyTimelineBounds();
   } catch(e){ /* keep defaults */ }
 }
 
