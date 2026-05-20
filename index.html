@@ -1616,7 +1616,7 @@ function _loadMoreBtn(code, st){
   const remaining=(st.totalResults - st.allItems.length).toLocaleString('it-IT');
   return `<div id="tt-load-more" style="padding:4px 0 0">
     <button class="tt-ctrl-btn" style="width:100%;justify-content:center" onclick="loadMoreTooltip('${code}')">
-      CARICA ALTRI 20 ▾ &nbsp;<span style="opacity:0.45">(${remaining} rimanenti su TMDB)</span>
+      CARICA ALTRI 20 ▾ &nbsp;<span style="opacity:0.45">(${remaining} rimanenti)</span>
     </button>
   </div>`;
 }
@@ -1675,7 +1675,7 @@ async function buildPinnedTooltip(code){
     const curDec = Math.floor(new Date().getFullYear()/10)*10;
     const _min   = modeDecadeMin();
     const _rangeActive = timeFrom > _min || timeTo < TL_MAX;
-    const startDec = _rangeActive ? Math.floor(timeFrom/10)*10 : 1890;
+    const startDec = _rangeActive ? Math.floor(timeFrom/10)*10 : _min;
     const endDec   = _rangeActive ? Math.min(Math.floor(timeTo/10)*10, curDec) : curDec;
     const candidates = [];
     for(let d=startDec; d<=endDec; d+=10) candidates.push(d);
