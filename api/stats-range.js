@@ -28,7 +28,7 @@ async function countryStatsRange(code, from, to) {
     const data = await tmdb('/discover/movie', {
       with_origin_country:        code,
       sort_by:                    'vote_count.desc',
-      'vote_count.gte':           1,
+      'vote_count.gte':           2,
       'primary_release_date.gte': `${from}-01-01`,
       'primary_release_date.lte': `${to}-12-31`,
       page:                       1,
