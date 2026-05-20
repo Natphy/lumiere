@@ -618,8 +618,11 @@ function saveBaseStats() {
 // sortDir: 'desc' (newest first, default) | 'asc' (oldest first, back to 1895)
 // Returns { data:[], totalPages, totalResults, sortDir }
 async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null, decade = null) {
+  // Include active timeline range in cache key so filtered/unfiltered results don't collide
+  const _rangeActive = timeFrom > modeDecadeMin() || timeTo < TL_MAX;
+  const _rangeSuffix = _rangeActive ? `_r${timeFrom}_${timeTo}` : '';
   // Cache key includes all active filters so each combination is stored separately
-  const cacheKey = `${viewMode}_${code}_p${page}_${sortDir}${genre?'_g'+genre:''}${decade?'_d'+decade:''}`;
+  const cacheKey = `${viewMode}_${code}_p${page}_${sortDir}${genre?'_g'+genre:''}${decade?'_d'+decade:''}${_rangeSuffix}`;
   const cached   = cacheGet(cacheKey);
   if (cached) {
     _storeCountryData(code, cached.data, viewMode);
@@ -631,7 +634,8 @@ async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null, 
     if (viewMode === 'films') {
       const genreParam  = genre  ? `&genre=${encodeURIComponent(genre)}`   : '';
       const decadeParam = decade ? `&decade=${decade}`                      : '';
-      const res  = await fetch(`${API_BASE}/films?country=${code}&page=${page}&sort=${sortDir}${genreParam}${decadeParam}`);
+      const rangeParam  = _rangeActive ? `&dateFrom=${timeFrom}&dateTo=${timeTo}` : '';
+      const res  = await fetch(`${API_BASE}/films?country=${code}&page=${page}&sort=${sortDir}${genreParam}${decadeParam}${rangeParam}`);
       if (!res.ok) throw new Error('films HTTP ' + res.status);
       const json = await res.json();
       data         = json.films        || [];
@@ -1535,6 +1539,12 @@ function _buildDecadeChips(code, st, isFilms){
     );
     if(presentDecades.size===0) return '';
     decades=[...presentDecades].sort((a,b)=>a-b);
+    // When a timeline range is active, only show decades that overlap with [timeFrom, timeTo]
+    const _minM=modeDecadeMin();
+    if(timeFrom>_minM||timeTo<TL_MAX){
+      decades=decades.filter(d=>d<=timeTo&&d+9>=timeFrom);
+    }
+    if(decades.length===0) return '';
   }
   const active=st.decadeFilter;
   const all=`<button class="tt-cat-chip${active===null?' active':''}" onclick="filterTooltipDecade('${code}',null)">Tutti</button>`;
@@ -1651,12 +1661,18 @@ async function buildPinnedTooltip(code){
   // Fetch page 1 AND (for films) decade validity checks — all in parallel.
   // Decade checks: query TMDB for each candidate decade; keep only those with
   // totalResults > 0 so we never show chips that lead to "Nessun risultato".
+  // When a timeline range is active the candidates are limited to decades that
+  // overlap with [timeFrom, timeTo] so we never show out-of-range chips.
   const page1Promise = fetchCountryData(code, 1, 'desc');
   let validDecadesPromise = Promise.resolve(null);
   if(isFilms){
     const curDec = Math.floor(new Date().getFullYear()/10)*10;
+    const _min   = modeDecadeMin();
+    const _rangeActive = timeFrom > _min || timeTo < TL_MAX;
+    const startDec = _rangeActive ? Math.floor(timeFrom/10)*10 : 1890;
+    const endDec   = _rangeActive ? Math.min(Math.floor(timeTo/10)*10, curDec) : curDec;
     const candidates = [];
-    for(let d=1890; d<=curDec; d+=10) candidates.push(d);
+    for(let d=startDec; d<=endDec; d+=10) candidates.push(d);
     validDecadesPromise = Promise.all(
       candidates.map(d =>
         fetchCountryData(code, 1, 'desc', null, d).then(r => r.totalResults>0 ? d : null)
@@ -1668,17 +1684,29 @@ async function buildPinnedTooltip(code){
     await Promise.all([page1Promise, validDecadesPromise]);
   if(selectedCode!==code) return;
 
+  // For people modes: filter loaded items to those born before the range end
+  // (born > timeTo means the person wasn't alive yet in the selected period).
+  // People with unknown birth year (born=null) are always included.
+  const _minMode    = modeDecadeMin();
+  const _rangeActive= timeFrom > _minMode || timeTo < TL_MAX;
+  let   rangeItems  = [...items];
+  if(!isFilms && _rangeActive){
+    rangeItems = rangeItems.filter(p => !p.born || p.born <= timeTo);
+  }
+
   // Init state
   const stKey=`${viewMode}_${code}`;
   _ttState[stKey]={ code, mode:viewMode, sortDir:'desc', decadeFilter:null, catFilter:null,
-                    tmdbGenre:null, allItems:[...items], page:1, totalPages, totalResults,
+                    tmdbGenre:null, allItems:rangeItems, page:1, totalPages,
+                    totalResults: isFilms ? totalResults : rangeItems.length,
                     validDecades };   // null for people; filtered array for films
   const st=_ttState[stKey];
 
-  // Subtitle
+  // Subtitle — mention range when active
+  const rangeLabel = _rangeActive ? ` · ${timeFrom}–${timeTo}` : '';
   const sub=isFilms
-    ? `Top ${items.length} su ${totalResults.toLocaleString('it-IT')} totali TMDB · ${c.continent.toUpperCase()}`
-    : `${items.length} ${modeLabel} più attivi · ${c.continent.toUpperCase()}`;
+    ? `Top ${rangeItems.length} su ${totalResults.toLocaleString('it-IT')} totali TMDB${rangeLabel} · ${c.continent.toUpperCase()}`
+    : `${rangeItems.length} ${modeLabel} nel periodo${rangeLabel} · ${c.continent.toUpperCase()}`;
 
   const visible=_applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.decadeFilter, st.catFilter);
 

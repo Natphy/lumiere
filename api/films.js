@@ -75,9 +75,13 @@ module.exports = async function handler(req, res) {
   const genreLabel = req.query.genre || null;
   const genreId    = genreLabel ? (GENRE_ID_MAP[genreLabel] || null) : null;
   const decade     = req.query.decade ? parseInt(req.query.decade, 10) : null;
+  // Optional timeline range filter passed by the client
+  const dateFrom   = req.query.dateFrom ? parseInt(req.query.dateFrom, 10) : null;
+  const dateTo     = req.query.dateTo   ? parseInt(req.query.dateTo,   10) : null;
 
   // Today's date as upper bound — ensures we never show future releases
   const today = new Date().toISOString().slice(0, 10);   // YYYY-MM-DD
+  const todayYear = parseInt(today.slice(0, 4), 10);
 
   // 1-hour CDN cache, 2-hour stale-while-revalidate
   res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
@@ -93,14 +97,21 @@ module.exports = async function handler(req, res) {
     };
     if (genreId) discoverParams.with_genres = genreId; // genre filter (optional)
     if (decade) {
-      // Decade filter: restrict to [decade, decade+9], capped at today
-      const todayYear = parseInt(today.slice(0, 4), 10);
-      discoverParams['primary_release_date.gte'] = `${decade}-01-01`;
+      // Decade filter: intersect [decade, decade+9] with optional date range, capped at today
+      const gteYear = dateFrom ? Math.max(decade,     dateFrom) : decade;
+      const lteYear = dateTo   ? Math.min(decade + 9, dateTo)   : decade + 9;
+      discoverParams['primary_release_date.gte'] = `${gteYear}-01-01`;
       discoverParams['primary_release_date.lte'] =
-        (decade + 9) >= todayYear ? today : `${decade + 9}-12-31`;
+        lteYear >= todayYear ? today : `${lteYear}-12-31`;
+    } else if (dateFrom || dateTo) {
+      // Timeline range filter only (no decade chip active)
+      discoverParams['primary_release_date.gte'] = `${dateFrom || 1888}-01-01`;
+      const toYear = dateTo || todayYear;
+      discoverParams['primary_release_date.lte'] =
+        toYear >= todayYear ? today : `${toYear}-12-31`;
     } else {
-      discoverParams['primary_release_date.lte'] = today;       // no future releases
-      discoverParams['primary_release_date.gte'] = '1888-01-01';// from the dawn of cinema
+      discoverParams['primary_release_date.lte'] = today;        // no future releases
+      discoverParams['primary_release_date.gte'] = '1888-01-01'; // from the dawn of cinema
     }
     const discover = await tmdb('/discover/movie', discoverParams);
 
