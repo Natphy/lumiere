@@ -1675,7 +1675,11 @@ async function buildPinnedTooltip(code){
     const curDec = Math.floor(new Date().getFullYear()/10)*10;
     const _min   = modeDecadeMin();
     const _rangeActive = timeFrom > _min || timeTo < TL_MAX;
-    const startDec = _rangeActive ? Math.floor(timeFrom/10)*10 : 1890;
+    // When not in range mode, start from modeDecadeMin() so that early-cinema
+    // decades (e.g. 1880s) get a chip — but guard against the 1800 sentinel
+    // value that tlMinByMode holds before fetchEarliestYears() completes.
+    const startDec = _rangeActive ? Math.floor(timeFrom/10)*10
+                                  : (_min > TL_MIN ? _min : 1890);
     const endDec   = _rangeActive ? Math.min(Math.floor(timeTo/10)*10, curDec) : curDec;
     const candidates = [];
     for(let d=startDec; d<=endDec; d+=10) candidates.push(d);
@@ -1735,19 +1739,22 @@ async function buildPinnedTooltip(code){
 async function toggleTooltipSort(code){
   const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
   const newDir = st.sortDir==='desc' ? 'asc' : 'desc';
-  st.sortDir      = newDir;
-  st.decadeFilter = null;
+  st.sortDir = newDir;
+  // decadeFilter is intentionally preserved: sorting within a selected decade
+  // must stay within that decade, not expand to all years.
 
   if(st.mode==='films'){
-    // Reset loaded items and re-fetch page 1 with new API sort
+    // Reset loaded items and re-fetch page 1 with new sort,
+    // keeping any active decade filter and genre filter.
     st.allItems=[];
     st.page=0;
     const cardsEl=document.getElementById('tt-cards');
-    if(cardsEl) cardsEl.innerHTML=`<div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento ${newDir==='asc'?'dal 1800…':'film recenti…'}</span></div>`;
+    const decLabel=st.decadeFilter?` anni ${st.decadeFilter}`:'';
+    if(cardsEl) cardsEl.innerHTML=`<div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento${decLabel} ${newDir==='asc'?'dal più vecchio…':'dal più recente…'}</span></div>`;
     const moreEl=document.getElementById('tt-load-more');
     if(moreEl) moreEl.remove();
 
-    const {data, totalPages, totalResults}=await fetchCountryData(code, 1, newDir);
+    const {data, totalPages, totalResults}=await fetchCountryData(code, 1, newDir, st.tmdbGenre||null, st.decadeFilter||null);
     if(selectedCode!==code) return;
     st.allItems  = [...data];
     st.page      = 1;
