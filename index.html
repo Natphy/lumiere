@@ -125,7 +125,7 @@
     .tt-cat-chip.active { border-color:var(--gold); color:var(--gold); box-shadow:0 0 12px rgba(255,215,0,0.3); }
 
     /* ── CANVAS ── */
-    .canvas-wrapper { position:fixed; top:64px; left:0; right:0; bottom:34px; z-index:0; overflow:hidden; }
+    .canvas-wrapper { position:fixed; top:64px; left:0; right:0; bottom:58px; z-index:0; overflow:hidden; }
     #lumiere-canvas { position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair; }
 
     /* ── RIGHT PANEL (rimosso — ora usa overlay modale come la guida) ── */
@@ -197,7 +197,7 @@
     .film-genre-tag { color:#ffcc00 !important; border-color:rgba(255,204,0,0.3) !important; background:rgba(255,204,0,0.08) !important; }
 
     /* ── FLASH ── */
-    .flash { position:fixed; bottom:52px; left:50%; transform:translateX(-50%) translateY(8px); background:rgba(7,9,15,0.97); border:1px solid var(--gold); border-left:3px solid var(--gold); color:var(--text); font-family:var(--ff-mono); font-size:0.68rem; padding:10px 18px; z-index:500; border-radius:4px; box-shadow:0 0 25px rgba(255,215,0,0.15); animation:flashIn 4s forwards; }
+    .flash { position:fixed; bottom:76px; left:50%; transform:translateX(-50%) translateY(8px); background:rgba(7,9,15,0.97); border:1px solid var(--gold); border-left:3px solid var(--gold); color:var(--text); font-family:var(--ff-mono); font-size:0.68rem; padding:10px 18px; z-index:500; border-radius:4px; box-shadow:0 0 25px rgba(255,215,0,0.15); animation:flashIn 4s forwards; }
     @keyframes flashIn { 0%{opacity:0;transform:translateX(-50%) translateY(12px)} 12%{opacity:1;transform:translateX(-50%) translateY(0)} 75%{opacity:1} 100%{opacity:0;transform:translateX(-50%) translateY(-4px)} }
 
     /* ── EDGE TABS (removed — NAZIONI moved to header) ── */
@@ -205,13 +205,13 @@
     /* ── PANEL OVERLAY (rimosso — nations usa overlay) ── */
 
     /* ── ZOOM HINT ── */
-    #zoom-hint { position:fixed; bottom:46px; left:50%; transform:translateX(-50%) translateY(8px); background:rgba(7,9,15,0.90); border:1px solid rgba(255,215,0,0.28); color:var(--text-mid); font-family:var(--ff-mono); font-size:0.64rem; letter-spacing:0.10em; padding:5px 14px; border-radius:3px; pointer-events:none; z-index:320; opacity:0; transition:opacity 0.28s ease,transform 0.28s ease; }
+    #zoom-hint { position:fixed; bottom:70px; left:50%; transform:translateX(-50%) translateY(8px); background:rgba(7,9,15,0.90); border:1px solid rgba(255,215,0,0.28); color:var(--text-mid); font-family:var(--ff-mono); font-size:0.64rem; letter-spacing:0.10em; padding:5px 14px; border-radius:3px; pointer-events:none; z-index:320; opacity:0; transition:opacity 0.28s ease,transform 0.28s ease; }
     #zoom-hint.vis { opacity:1; transform:translateX(-50%) translateY(0); }
 
     /* ── RESPONSIVE ── */
     @media(max-width:1099px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .mode-num{display:none} #updateBtn{display:none} .hdr-btn,.update-btn{height:1.9rem;font-size:0.74rem;padding:0 12px;letter-spacing:0.12em} .canvas-wrapper{top:52px} footer{font-size:0.65rem} #tooltip{width:300px} .tt-title{font-size:1.95rem} .tt-subtitle{font-size:0.70rem} .film-year{font-size:1.43rem} .film-title{font-size:1.24rem} .film-genre-tag{font-size:0.65rem} .film-dir{font-size:0.70rem} .film-synopsis{font-size:1.07rem} .film-actors-line{font-size:0.68rem} .actor-name{font-size:1.24rem} .actor-years{font-size:1.11rem} .actor-bio{font-size:1.07rem} .actor-films-line{font-size:0.68rem} .panel-title{font-size:0.75rem} .legend-text{font-size:0.99rem} .legend-count{font-size:0.81rem} .cc-name{font-size:1.17rem} .cc-meta{font-size:0.70rem} .modal-title{font-size:2rem} .modal-subtitle{font-size:0.75rem} .modal-close{font-size:0.845rem} .app-desc-text{font-size:1.3rem} .guide-label{font-size:1.17rem} .guide-desc{font-size:1.17rem} .guide-icon{font-size:0.975rem} .sources-cat-title{font-size:0.75rem} .source-name{font-size:1.17rem} .source-url{font-size:0.73rem} .source-desc{font-size:1.105rem} }
-    @media(max-width:767px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .left-panel{top:62px;bottom:38px;width:268px} footer{height:28px;font-size:0.66rem;padding:0 12px} .footer-status{display:none} .canvas-wrapper{top:52px;bottom:28px} #tooltip{width:min(300px,90vw)} }
-    @media(max-width:479px) { header{height:46px;padding:6px 8px;align-items:center} .logo h1{font-size:1.35rem} .mode-num{display:none} .left-panel{width:min(290px,90vw);top:56px;bottom:38px} .hdr-btn,.update-btn{height:1.35rem;padding:0 8px;font-size:0.70rem;letter-spacing:0.08em} footer{height:28px;padding:0 10px} .footer-status{display:none} .canvas-wrapper{top:46px;bottom:28px} #tooltip{width:min(290px,92vw)} }
+    @media(max-width:767px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .left-panel{top:62px;bottom:38px;width:268px} footer{height:28px;font-size:0.66rem;padding:0 12px} .footer-status{display:none} .canvas-wrapper{top:52px;bottom:46px} #tooltip{width:min(300px,90vw)} }
+    @media(max-width:479px) { header{height:46px;padding:6px 8px;align-items:center} .logo h1{font-size:1.35rem} .mode-num{display:none} .left-panel{width:min(290px,90vw);top:56px;bottom:38px} .hdr-btn,.update-btn{height:1.35rem;padding:0 8px;font-size:0.70rem;letter-spacing:0.08em} footer{height:28px;padding:0 10px} .footer-status{display:none} .canvas-wrapper{top:46px;bottom:46px} #tooltip{width:min(290px,92vw)} }
 
     /* ── SCROLLBAR ── */
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:var(--surface)} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px} ::-webkit-scrollbar-thumb:hover{background:rgba(255,215,0,0.35)}
@@ -246,6 +246,20 @@
     /* ── TOOLTIP LOADING STATE ── */
     .tt-loading { display:flex; align-items:center; gap:12px; padding:24px 0; color:var(--text-dim); font-family:var(--ff-mono); font-size:0.88rem; letter-spacing:0.08em; }
     .tt-spinner { width:18px; height:18px; border:2px solid rgba(255,215,0,0.2); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
+
+    /* ── TIMELINE RANGE BAR ── */
+    #timeline-bar { position:fixed; bottom:34px; left:0; right:0; height:24px; z-index:1050; user-select:none; touch-action:none; }
+    #tl-track { position:absolute; top:50%; left:14px; right:14px; height:10px; margin-top:-5px; border-radius:5px; cursor:pointer; overflow:visible; background:linear-gradient(90deg,#1e0e00 0%,#4a2200 12%,#7b4500 28%,#b37800 55%,#e6b800 80%,#ffd700 100%); }
+    #tl-track-fill { position:absolute; inset:0; border-radius:5px; pointer-events:none; }
+    #tl-dim-l,#tl-dim-r { position:absolute; top:0; height:100%; background:rgba(3,4,7,0.76); pointer-events:none; z-index:1; border-radius:5px; }
+    #tl-dim-l { left:0; border-top-right-radius:0; border-bottom-right-radius:0; }
+    #tl-dim-r { right:0; border-top-left-radius:0; border-bottom-left-radius:0; }
+    .tl-tick { position:absolute; top:1px; width:1px; height:calc(100% - 2px); background:rgba(0,0,0,0.30); pointer-events:none; z-index:2; }
+    .tl-handle { position:absolute; top:50%; width:10px; height:24px; margin-top:-12px; transform:translateX(-50%); background:linear-gradient(180deg,#fff8cc,#ffd700); border-radius:3px; cursor:ew-resize; z-index:10; box-shadow:0 0 8px rgba(255,215,0,0.75),0 1px 4px rgba(0,0,0,0.7); transition:box-shadow 0.15s,background 0.15s; }
+    .tl-handle:hover,.tl-handle.tl-active { background:linear-gradient(180deg,#fff,#ffe87a); box-shadow:0 0 16px rgba(255,215,0,1),0 0 30px rgba(255,215,0,0.45); }
+    .tl-label { position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%); font-family:var(--ff-mono); font-size:0.50rem; letter-spacing:0.10em; color:var(--gold); white-space:nowrap; pointer-events:none; text-shadow:0 1px 6px rgba(0,0,0,1),0 0 10px rgba(0,0,0,0.9); transition:opacity 0.2s; }
+    #tl-range-badge { position:absolute; top:50%; left:50%; transform:translate(-50%,-55%); font-family:var(--ff-mono); font-size:0.48rem; letter-spacing:0.16em; color:rgba(255,215,0,0.42); pointer-events:none; white-space:nowrap; text-shadow:0 0 8px rgba(0,0,0,0.9); }
+    @media(max-width:767px){ #timeline-bar{bottom:28px;height:18px} #tl-track{height:6px;margin-top:-3px;left:8px;right:8px} .tl-handle{width:8px;height:18px;margin-top:-9px} .tl-label{font-size:0.44rem;bottom:calc(100% + 3px)} #tl-range-badge{font-size:0.42rem} }
   </style>
 </head>
 <body>
@@ -352,6 +366,17 @@
     </div>
     <div class="modal-body" id="country-list"></div>
   </div>
+</div>
+
+<!-- ── TIMELINE RANGE BAR ── -->
+<div id="timeline-bar">
+  <div id="tl-track">
+    <div id="tl-dim-l"></div>
+    <div id="tl-dim-r"></div>
+  </div>
+  <div id="tl-handle-l" class="tl-handle"><div class="tl-label" id="tl-lbl-l"></div></div>
+  <div id="tl-handle-r" class="tl-handle"><div class="tl-label" id="tl-lbl-r"></div></div>
+  <div id="tl-range-badge"></div>
 </div>
 
 <!-- ── FOOTER ── -->
@@ -681,6 +706,27 @@ const ANIM_DUR = 550;
 const nodeHoverT = {};
 const bandHoverT = {}; // per-column lerp for width expansion (keyed by base x)
 
+// ── Timeline range state ──
+const TL_MIN = 1800;
+const TL_MAX = new Date().getFullYear();
+let timeFrom = TL_MIN;
+let timeTo   = TL_MAX;
+
+// Approximate year of first film/projection per country
+const CINEMA_START = {
+  FR:1895,GB:1895,DE:1895,IT:1895,ES:1896,PT:1896,BE:1896,NL:1896,
+  CH:1895,AT:1895,SE:1897,NO:1907,DK:1896,FI:1906,PL:1896,CZ:1898,
+  SK:1921,HU:1896,RO:1897,BG:1910,GR:1906,RS:1896,HR:1917,TR:1914,
+  RU:1896,UA:1896,IE:1910,IS:1948,GE:1912,LT:1909,AL:1952,
+  US:1894,CA:1897,MX:1896,BR:1897,AR:1897,CL:1902,CO:1897,
+  PE:1913,VE:1897,UY:1898,CU:1897,BO:1925,
+  JP:1897,KR:1919,CN:1905,HK:1909,TW:1901,IN:1896,TH:1927,
+  ID:1926,MY:1933,PH:1912,VN:1937,SG:1927,PK:1948,BD:1957,
+  IR:1900,IL:1933,LB:1929,KZ:1938,MN:1936,
+  EG:1896,MA:1944,TN:1966,DZ:1966,NG:1960,GH:1965,ZA:1896,SN:1963,CM:1955,
+  AU:1896,NZ:1913
+};
+
 // ── Auto-animation al lancio ──
 let autoMode        = true;   // true = animazione automatica attiva
 let autoCode        = null;   // tessera correntemente "animata" in auto
@@ -777,8 +823,12 @@ function getFilteredDirectors(code){
   return COUNTRY_DIRECTORS[code] || [];
 }
 
-// Genre/movement filtering is not available in live mode (would require all data loaded)
-function isDimmed(code){ return false; }
+// Tile is dimmed when its cinema predates the range upper bound (started after timeTo)
+function isDimmed(code){
+  if(timeFrom===TL_MIN && timeTo===TL_MAX) return false;
+  const start=CINEMA_START[code]||1895;
+  return start>timeTo;
+}
 
 // ═══════════════════════════════════════════════════════
 // MOSAIC LAYOUT ENGINE
@@ -1858,6 +1908,120 @@ window.addEventListener('resize',()=>{
 });
 
 // ═══════════════════════════════════════════════════════
+// TIMELINE RANGE BAR
+// ═══════════════════════════════════════════════════════
+function snapDecade(yr){
+  // Build snap points: every 10 years from TL_MIN, plus TL_MAX as endpoint
+  const steps=[];
+  for(let d=TL_MIN;d<=TL_MAX;d+=10) steps.push(d);
+  if(steps[steps.length-1]!==TL_MAX) steps.push(TL_MAX);
+  let best=steps[0], bestD=Math.abs(yr-steps[0]);
+  steps.forEach(s=>{ const d=Math.abs(yr-s); if(d<bestD){bestD=d;best=s;} });
+  return best;
+}
+function tlFrac(yr){ return (yr-TL_MIN)/(TL_MAX-TL_MIN); }
+function tlYear(frac){ return Math.round(TL_MIN+frac*(TL_MAX-TL_MIN)); }
+
+function initTimeline(){
+  const track=document.getElementById('tl-track');
+  const hlL  =document.getElementById('tl-handle-l');
+  const hlR  =document.getElementById('tl-handle-r');
+  const dimL =document.getElementById('tl-dim-l');
+  const dimR =document.getElementById('tl-dim-r');
+  const lblL =document.getElementById('tl-lbl-l');
+  const lblR =document.getElementById('tl-lbl-r');
+  const badge=document.getElementById('tl-range-badge');
+
+  // Decade tick marks
+  for(let d=TL_MIN+10;d<TL_MAX;d+=10){
+    const tick=document.createElement('div');
+    tick.className='tl-tick';
+    tick.style.left=(tlFrac(d)*100)+'%';
+    track.appendChild(tick);
+  }
+
+  function updatePos(){
+    const pL=tlFrac(timeFrom)*100;
+    const pR=tlFrac(timeTo)*100;
+    dimL.style.width=pL+'%';
+    dimR.style.width=(100-pR)+'%';
+    hlL.style.left=pL+'%';
+    hlR.style.left=pR+'%';
+    const filtered=timeFrom>TL_MIN||timeTo<TL_MAX;
+    lblL.textContent=String(timeFrom);
+    lblR.textContent=String(timeTo);
+    lblL.style.opacity=filtered?'1':'0.50';
+    lblR.style.opacity=filtered?'1':'0.50';
+    badge.textContent=filtered?timeFrom+' — '+timeTo:'';
+  }
+
+  function applyFilter(){
+    buildMosaicLayout();
+  }
+
+  let dragging=null;
+
+  function onMove(e){
+    if(!dragging) return;
+    const rect=track.getBoundingClientRect();
+    const cx=e.touches?e.touches[0].clientX:e.clientX;
+    let frac=Math.max(0,Math.min(1,(cx-rect.left)/rect.width));
+    const yr=snapDecade(tlYear(frac));
+    if(dragging==='l') timeFrom=Math.min(yr,timeTo-10);
+    else               timeTo  =Math.max(yr,timeFrom+10);
+    updatePos();
+  }
+
+  function onUp(){
+    if(!dragging) return;
+    hlL.classList.remove('tl-active');
+    hlR.classList.remove('tl-active');
+    dragging=null;
+    applyFilter();
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    document.removeEventListener('touchmove',onMove);
+    document.removeEventListener('touchend',onUp);
+  }
+
+  function startDrag(which,e){
+    e.preventDefault();
+    dragging=which;
+    (which==='l'?hlL:hlR).classList.add('tl-active');
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+    document.addEventListener('touchmove',onMove,{passive:false});
+    document.addEventListener('touchend',onUp);
+  }
+
+  hlL.addEventListener('mousedown', e=>startDrag('l',e));
+  hlL.addEventListener('touchstart',e=>startDrag('l',e),{passive:false});
+  hlR.addEventListener('mousedown', e=>startDrag('r',e));
+  hlR.addEventListener('touchstart',e=>startDrag('r',e),{passive:false});
+
+  // Click on track jumps nearest handle
+  track.addEventListener('click',e=>{
+    const rect=track.getBoundingClientRect();
+    const frac=(e.clientX-rect.left)/rect.width;
+    const yr=snapDecade(tlYear(Math.max(0,Math.min(1,frac))));
+    const dL=Math.abs(yr-timeFrom), dR=Math.abs(yr-timeTo);
+    if(dL<=dR) timeFrom=Math.min(yr,timeTo-10);
+    else        timeTo  =Math.max(yr,timeFrom+10);
+    updatePos();
+    applyFilter();
+  });
+
+  // Double-click resets to full range
+  track.addEventListener('dblclick',()=>{
+    timeFrom=TL_MIN; timeTo=TL_MAX;
+    updatePos();
+    applyFilter();
+  });
+
+  updatePos();
+}
+
+// ═══════════════════════════════════════════════════════
 // KEYBOARD
 // ═══════════════════════════════════════════════════════
 document.addEventListener('keydown',e=>{
@@ -1881,6 +2045,7 @@ requestAnimationFrame(async ()=>{
   document.getElementById('last-update').textContent=`${now.getDate()} ${months[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;
   renderRightPanel();
   updateStats();
+  initTimeline();
   draw();
   startAutoMode(); // avvia l'animazione automatica casuale al lancio
   // Fetch live stats from TMDB (resizes tiles when data arrives)
