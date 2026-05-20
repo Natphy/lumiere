@@ -1122,9 +1122,13 @@ function drawTile(code){
     ctx.textAlign='center';
     ctx.textBaseline='middle';
 
+    // Horizontal margin so text never touches tile edges (8% of width, min 5px each side)
+    const mrgX=Math.max(5,w*0.08);
+    const maxLineW=w-mrgX*2;
+
     // Font sizes grow with hT via the live tile dimensions (w/h already reflect expansion).
     // Height coefficients scale from rest to peak; absolute caps prevent excess on huge tiles.
-    const nSz=Math.max(7,Math.min(w*0.28, h*(0.10+hT*0.15), 60));
+    let nSz=Math.max(7,Math.min(w*0.28, h*(0.10+hT*0.15), 60));
     // Letter-spacing only for small fonts (large fonts need every pixel for characters)
     const letterSp=nSz<11&&w>30?Math.round(nSz*0.18):0;
     ctx.font=`${nSz}px 'Share Tech Mono',monospace`;
@@ -1133,18 +1137,15 @@ function drawTile(code){
     const approxW=str=>ctx.measureText(str).width+(hasLS?0:str.length*letterSp);
 
     // For very narrow tiles use the ISO code (2 chars always fit);
-    // otherwise word-wrap the full name, truncating each word to the tile width.
-    let lines;
-    if(w<20){
-      lines=[code]; // e.g. "IT", "FR", "JP"
-    } else {
-      const rawWords=c.name.toUpperCase().split(' ');
-      lines=rawWords.map(word=>{
-        let nm=word;
-        while(approxW(nm)>w-6&&nm.length>1) nm=nm.slice(0,-1);
-        if(nm!==word) nm=nm.trimEnd()+'…';
-        return nm;
-      });
+    // otherwise each word goes on its own line (no truncation).
+    const lines=w<20?[code]:c.name.toUpperCase().split(' ');
+
+    // Auto-fit: if the longest word overflows maxLineW, scale nSz down proportionally.
+    // Single step — no loop — keeps draw calls fast.
+    const maxWordW=Math.max(...lines.map(approxW));
+    if(maxWordW>maxLineW&&maxWordW>0){
+      nSz=Math.max(7,nSz*(maxLineW/maxWordW));
+      ctx.font=`${nSz}px 'Share Tech Mono',monospace`;
     }
 
     const lineH=nSz*1.1;  // interlinea ridotta del 50% (era 1.35)
