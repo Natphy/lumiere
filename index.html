@@ -1158,8 +1158,8 @@ function drawTile(code){
     const blockStart=cy-totalBlockH/2;
 
     // Draw name lines
-    const nameShadow=isMax?'rgba(0,0,0,0.3)':'rgba(0,0,0,0.7)';
-    const nameColor=isMax?'rgba(0,0,0,0.85)':`rgba(255,255,255,${0.75+hT*0.25})`;
+    const nameShadow=isMax?'rgba(0,0,0,0.2)':'rgba(0,0,0,0.7)';
+    const nameColor=isMax?'rgba(0,0,0,0.55)':`rgba(255,255,255,${0.75+hT*0.25})`;
     lines.forEach((line,li)=>{
       const wy=blockStart+nSz/2+li*lineH;
       ctx.fillStyle=nameShadow;
