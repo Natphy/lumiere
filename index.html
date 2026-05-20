@@ -707,10 +707,18 @@ const nodeHoverT = {};
 const bandHoverT = {}; // per-column lerp for width expansion (keyed by base x)
 
 // ── Timeline range state ──
-const TL_MIN = 1800;
+const TL_MIN = 1800;       // absolute track left (gradient always starts here)
 const TL_MAX = new Date().getFullYear();
 let timeFrom = TL_MIN;
 let timeTo   = TL_MAX;
+
+// Per-mode dynamic minimums (populated by fetchEarliestYears, then used as
+// the left-handle drag limit and the default left position per mode)
+let tlMinByMode = { films: TL_MIN, directors: TL_MIN, actors: TL_MIN };
+
+// Callbacks set by initTimeline() so external code can trigger UI updates
+let tlUpdateUI    = null;
+let tlApplyFilter = null;
 
 // Approximate year of first film/projection per country
 const CINEMA_START = {
@@ -823,9 +831,11 @@ function getFilteredDirectors(code){
   return COUNTRY_DIRECTORS[code] || [];
 }
 
-// Tile is dimmed when its cinema predates the range upper bound (started after timeTo)
+// Tile is dimmed when its cinema started after the selected range end (timeTo).
+// Full range = modeMin → TL_MAX means no filter active.
 function isDimmed(code){
-  if(timeFrom===TL_MIN && timeTo===TL_MAX) return false;
+  const modeMin=tlMinByMode[viewMode]||TL_MIN;
+  if(timeFrom<=modeMin && timeTo>=TL_MAX) return false;
   const start=CINEMA_START[code]||1895;
   return start>timeTo;
 }
@@ -1841,6 +1851,7 @@ function setViewMode(mode){
   const el=document.getElementById('mode-stat-'+mode);
   if(el) el.classList.add('active');
   if(selectedCode) closePinnedTooltip();
+  applyTimelineBounds(); // move left handle to earliest year for new mode
   buildMosaicLayout();
   updateStats();
   renderRightPanel();
@@ -1932,7 +1943,7 @@ function initTimeline(){
   const lblR =document.getElementById('tl-lbl-r');
   const badge=document.getElementById('tl-range-badge');
 
-  // Decade tick marks
+  // Decade tick marks (generated once)
   for(let d=TL_MIN+10;d<TL_MAX;d+=10){
     const tick=document.createElement('div');
     tick.className='tl-tick';
@@ -1941,13 +1952,14 @@ function initTimeline(){
   }
 
   function updatePos(){
+    const modeMin=tlMinByMode[viewMode]||TL_MIN;
     const pL=tlFrac(timeFrom)*100;
     const pR=tlFrac(timeTo)*100;
     dimL.style.width=pL+'%';
     dimR.style.width=(100-pR)+'%';
     hlL.style.left=pL+'%';
     hlR.style.left=pR+'%';
-    const filtered=timeFrom>TL_MIN||timeTo<TL_MAX;
+    const filtered=timeFrom>modeMin||timeTo<TL_MAX;
     lblL.textContent=String(timeFrom);
     lblR.textContent=String(timeTo);
     lblL.style.opacity=filtered?'1':'0.50';
@@ -1959,15 +1971,20 @@ function initTimeline(){
     buildMosaicLayout();
   }
 
+  // Expose to module scope so external callers (mode switch, earliest fetch) can trigger them
+  tlUpdateUI    = updatePos;
+  tlApplyFilter = applyFilter;
+
   let dragging=null;
 
   function onMove(e){
     if(!dragging) return;
+    const modeMin=tlMinByMode[viewMode]||TL_MIN;
     const rect=track.getBoundingClientRect();
     const cx=e.touches?e.touches[0].clientX:e.clientX;
     let frac=Math.max(0,Math.min(1,(cx-rect.left)/rect.width));
     const yr=snapDecade(tlYear(frac));
-    if(dragging==='l') timeFrom=Math.min(yr,timeTo-10);
+    if(dragging==='l') timeFrom=Math.max(modeMin,Math.min(yr,timeTo-10));
     else               timeTo  =Math.max(yr,timeFrom+10);
     updatePos();
   }
@@ -1999,26 +2016,54 @@ function initTimeline(){
   hlR.addEventListener('mousedown', e=>startDrag('r',e));
   hlR.addEventListener('touchstart',e=>startDrag('r',e),{passive:false});
 
-  // Click on track jumps nearest handle
+  // Click on track jumps nearest handle (clamped to modeMin)
   track.addEventListener('click',e=>{
+    const modeMin=tlMinByMode[viewMode]||TL_MIN;
     const rect=track.getBoundingClientRect();
     const frac=(e.clientX-rect.left)/rect.width;
     const yr=snapDecade(tlYear(Math.max(0,Math.min(1,frac))));
     const dL=Math.abs(yr-timeFrom), dR=Math.abs(yr-timeTo);
-    if(dL<=dR) timeFrom=Math.min(yr,timeTo-10);
+    if(dL<=dR) timeFrom=Math.max(modeMin,Math.min(yr,timeTo-10));
     else        timeTo  =Math.max(yr,timeFrom+10);
     updatePos();
     applyFilter();
   });
 
-  // Double-click resets to full range
+  // Double-click resets to mode default (earliest year for current mode)
   track.addEventListener('dblclick',()=>{
-    timeFrom=TL_MIN; timeTo=TL_MAX;
+    timeFrom=tlMinByMode[viewMode]||TL_MIN;
+    timeTo  =TL_MAX;
     updatePos();
     applyFilter();
   });
 
   updatePos();
+}
+
+// Fetch earliest years from /api/earliest, update tlMinByMode, then
+// reposition the left handle to the new minimum for the current mode.
+async function fetchEarliestYears(){
+  try {
+    const cached=cacheGet('earliest');
+    if(cached){ tlMinByMode=cached; applyTimelineBounds(); return; }
+    const data=await fetch(`${API_BASE}/earliest`).then(r=>r.json());
+    if(data && typeof data.films==='number'){
+      tlMinByMode={ films:data.films, directors:data.directors, actors:data.actors };
+      cacheSet('earliest',tlMinByMode);
+      applyTimelineBounds();
+    }
+  } catch(e){ /* keep defaults */ }
+}
+
+// Set timeFrom to the dynamic minimum for the current mode, then refresh UI.
+// Called on mode switch and after fetchEarliestYears resolves.
+function applyTimelineBounds(){
+  const modeMin=tlMinByMode[viewMode]||TL_MIN;
+  // Only move timeFrom if it's currently at the default (i.e. user hasn't set a custom range
+  // that is tighter than the new minimum). Never push timeFrom past timeTo.
+  if(timeFrom<=modeMin) timeFrom=modeMin;
+  timeFrom=Math.min(timeFrom,timeTo-10);
+  if(tlUpdateUI) tlUpdateUI();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2051,6 +2096,8 @@ requestAnimationFrame(async ()=>{
   // Fetch live stats from TMDB (resizes tiles when data arrives)
   await initStats();
   renderRightPanel();
+  // Fetch earliest years for each mode (cached 24 h) — updates left handle
+  fetchEarliestYears();
 });
 </script>
 </body>
