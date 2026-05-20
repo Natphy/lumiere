@@ -1171,9 +1171,13 @@ function drawTile(code){
     // Draw count
     if(showCount){
       if(ctx.letterSpacing!==undefined) ctx.letterSpacing='0px';
-      ctx.font=`${cSz}px 'Bebas Neue',sans-serif`;
       const cText=String(count);
-      const countY=blockStart+nameBlockH+GAP+cSz/2;
+      ctx.font=`${cSz}px 'Bebas Neue',sans-serif`;
+      // Auto-fit: scale cSz down if the number overflows maxLineW (same logic as name)
+      const cTextW=ctx.measureText(cText).width;
+      const cSzFinal=cTextW>maxLineW&&cTextW>0 ? Math.max(8,cSz*(maxLineW/cTextW)) : cSz;
+      if(cSzFinal!==cSz) ctx.font=`${cSzFinal}px 'Bebas Neue',sans-serif`;
+      const countY=blockStart+nameBlockH+GAP+cSzFinal/2;
       ctx.fillStyle=isMax?'rgba(0,0,0,0.2)':'rgba(0,0,0,0.6)';
       ctx.fillText(cText,cx+1,countY+1);
       ctx.fillStyle=isMax?'rgba(0,0,0,0.55)':'rgba(255,215,0,0.80)';
