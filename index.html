@@ -832,10 +832,9 @@ function getFilteredDirectors(code){
 }
 
 // Tile is dimmed when its cinema started after the selected range end (timeTo).
-// Full range = modeMin → TL_MAX means no filter active.
+// Full range = modeDecadeMin() → TL_MAX means no filter active.
 function isDimmed(code){
-  const modeMin=tlMinByMode[viewMode]||TL_MIN;
-  if(timeFrom<=modeMin && timeTo>=TL_MAX) return false;
+  if(timeFrom<=modeDecadeMin() && timeTo>=TL_MAX) return false;
   const start=CINEMA_START[code]||1895;
   return start>timeTo;
 }
@@ -1921,17 +1920,48 @@ window.addEventListener('resize',()=>{
 // ═══════════════════════════════════════════════════════
 // TIMELINE RANGE BAR
 // ═══════════════════════════════════════════════════════
+// Decade floor of the earliest year for the current view mode.
+// This is the left edge of the track (position 0%).
+function modeDecadeMin(){
+  const raw=tlMinByMode[viewMode]||TL_MIN;
+  return Math.floor(raw/10)*10;
+}
+
+// tlFrac / tlYear always work relative to the current modeDecadeMin so that
+// the left handle sits at 0% (extreme left) on every mode.
+function tlFrac(yr){
+  const min=modeDecadeMin();
+  return (yr-min)/(TL_MAX-min);
+}
+function tlYear(frac){
+  const min=modeDecadeMin();
+  return Math.round(min+frac*(TL_MAX-min));
+}
+
+// Snap to nearest decade within [modeDecadeMin, TL_MAX]
 function snapDecade(yr){
-  // Build snap points: every 10 years from TL_MIN, plus TL_MAX as endpoint
+  const min=modeDecadeMin();
   const steps=[];
-  for(let d=TL_MIN;d<=TL_MAX;d+=10) steps.push(d);
+  for(let d=min;d<=TL_MAX;d+=10) steps.push(d);
   if(steps[steps.length-1]!==TL_MAX) steps.push(TL_MAX);
   let best=steps[0], bestD=Math.abs(yr-steps[0]);
   steps.forEach(s=>{ const d=Math.abs(yr-s); if(d<bestD){bestD=d;best=s;} });
   return best;
 }
-function tlFrac(yr){ return (yr-TL_MIN)/(TL_MAX-TL_MIN); }
-function tlYear(frac){ return Math.round(TL_MIN+frac*(TL_MAX-TL_MIN)); }
+
+// Regenerate tick marks inside the track element whenever the mode range changes.
+function tlRebuildTicks(){
+  const track=document.getElementById('tl-track');
+  if(!track) return;
+  track.querySelectorAll('.tl-tick').forEach(t=>t.remove());
+  const min=modeDecadeMin();
+  for(let d=min+10;d<TL_MAX;d+=10){
+    const tick=document.createElement('div');
+    tick.className='tl-tick';
+    tick.style.left=(tlFrac(d)*100)+'%';
+    track.appendChild(tick);
+  }
+}
 
 function initTimeline(){
   const track=document.getElementById('tl-track');
@@ -1943,23 +1973,20 @@ function initTimeline(){
   const lblR =document.getElementById('tl-lbl-r');
   const badge=document.getElementById('tl-range-badge');
 
-  // Decade tick marks (generated once)
-  for(let d=TL_MIN+10;d<TL_MAX;d+=10){
-    const tick=document.createElement('div');
-    tick.className='tl-tick';
-    tick.style.left=(tlFrac(d)*100)+'%';
-    track.appendChild(tick);
-  }
+  // Initial state: left handle at the mode decade minimum
+  timeFrom=modeDecadeMin();
+  timeTo  =TL_MAX;
+  tlRebuildTicks();
 
   function updatePos(){
-    const modeMin=tlMinByMode[viewMode]||TL_MIN;
+    const min=modeDecadeMin();
     const pL=tlFrac(timeFrom)*100;
     const pR=tlFrac(timeTo)*100;
     dimL.style.width=pL+'%';
     dimR.style.width=(100-pR)+'%';
     hlL.style.left=pL+'%';
     hlR.style.left=pR+'%';
-    const filtered=timeFrom>modeMin||timeTo<TL_MAX;
+    const filtered=timeFrom>min||timeTo<TL_MAX;
     lblL.textContent=String(timeFrom);
     lblR.textContent=String(timeTo);
     lblL.style.opacity=filtered?'1':'0.50';
@@ -1979,12 +2006,12 @@ function initTimeline(){
 
   function onMove(e){
     if(!dragging) return;
-    const modeMin=tlMinByMode[viewMode]||TL_MIN;
     const rect=track.getBoundingClientRect();
     const cx=e.touches?e.touches[0].clientX:e.clientX;
     let frac=Math.max(0,Math.min(1,(cx-rect.left)/rect.width));
     const yr=snapDecade(tlYear(frac));
-    if(dragging==='l') timeFrom=Math.max(modeMin,Math.min(yr,timeTo-10));
+    // left handle cannot go left of modeDecadeMin (track start)
+    if(dragging==='l') timeFrom=Math.max(modeDecadeMin(),Math.min(yr,timeTo-10));
     else               timeTo  =Math.max(yr,timeFrom+10);
     updatePos();
   }
@@ -2016,22 +2043,21 @@ function initTimeline(){
   hlR.addEventListener('mousedown', e=>startDrag('r',e));
   hlR.addEventListener('touchstart',e=>startDrag('r',e),{passive:false});
 
-  // Click on track jumps nearest handle (clamped to modeMin)
+  // Click on track jumps nearest handle (left handle clamped to track start)
   track.addEventListener('click',e=>{
-    const modeMin=tlMinByMode[viewMode]||TL_MIN;
     const rect=track.getBoundingClientRect();
     const frac=(e.clientX-rect.left)/rect.width;
     const yr=snapDecade(tlYear(Math.max(0,Math.min(1,frac))));
     const dL=Math.abs(yr-timeFrom), dR=Math.abs(yr-timeTo);
-    if(dL<=dR) timeFrom=Math.max(modeMin,Math.min(yr,timeTo-10));
+    if(dL<=dR) timeFrom=Math.max(modeDecadeMin(),Math.min(yr,timeTo-10));
     else        timeTo  =Math.max(yr,timeFrom+10);
     updatePos();
     applyFilter();
   });
 
-  // Double-click resets to mode default (earliest year for current mode)
+  // Double-click resets to full range for current mode
   track.addEventListener('dblclick',()=>{
-    timeFrom=tlMinByMode[viewMode]||TL_MIN;
+    timeFrom=modeDecadeMin();
     timeTo  =TL_MAX;
     updatePos();
     applyFilter();
@@ -2055,15 +2081,17 @@ async function fetchEarliestYears(){
   } catch(e){ /* keep defaults */ }
 }
 
-// Set timeFrom to the dynamic minimum for the current mode, then refresh UI.
+// Reset timeline to the full range for the current mode:
+//   left handle  → modeDecadeMin() (track start, position 0%)
+//   right handle → TL_MAX
+// Then rebuild tick marks (positions depend on mode range) and refresh UI.
 // Called on mode switch and after fetchEarliestYears resolves.
 function applyTimelineBounds(){
-  const modeMin=tlMinByMode[viewMode]||TL_MIN;
-  // Only move timeFrom if it's currently at the default (i.e. user hasn't set a custom range
-  // that is tighter than the new minimum). Never push timeFrom past timeTo.
-  if(timeFrom<=modeMin) timeFrom=modeMin;
-  timeFrom=Math.min(timeFrom,timeTo-10);
+  timeFrom=modeDecadeMin();
+  timeTo  =TL_MAX;
+  tlRebuildTicks();
   if(tlUpdateUI) tlUpdateUI();
+  if(tlApplyFilter) tlApplyFilter();
 }
 
 // ═══════════════════════════════════════════════════════
