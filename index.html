@@ -255,14 +255,14 @@
     #tl-dim-l { left:0; border-top-right-radius:0; border-bottom-right-radius:0; }
     #tl-dim-r { right:0; border-top-left-radius:0; border-bottom-left-radius:0; }
     .tl-tick { position:absolute; top:1px; width:1px; height:calc(100% - 2px); background:rgba(0,0,0,0.30); pointer-events:none; z-index:2; }
-    .tl-handle { position:absolute; top:50%; width:10px; height:24px; margin-top:-12px; transform:translateX(-50%); background:linear-gradient(180deg,#fff8cc,#ffd700); border-radius:3px; cursor:ew-resize; z-index:10; box-shadow:0 0 8px rgba(255,215,0,0.75),0 1px 4px rgba(0,0,0,0.7); transition:box-shadow 0.15s,background 0.15s; }
+    .tl-handle { position:absolute; top:50%; width:40px; height:22px; margin-top:-11px; transform:translateX(-50%); background:linear-gradient(180deg,#fff8cc,#ffd700); border-radius:4px; cursor:ew-resize; z-index:10; box-shadow:0 0 8px rgba(255,215,0,0.75),0 1px 4px rgba(0,0,0,0.7); transition:box-shadow 0.15s,background 0.15s; display:flex; align-items:center; justify-content:center; }
     .tl-handle:hover,.tl-handle.tl-active { background:linear-gradient(180deg,#fff,#ffe87a); box-shadow:0 0 16px rgba(255,215,0,1),0 0 30px rgba(255,215,0,0.45); }
-    .tl-label { position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%); font-family:var(--ff-mono); font-size:0.50rem; letter-spacing:0.10em; color:var(--gold); white-space:nowrap; pointer-events:none; text-shadow:0 1px 6px rgba(0,0,0,1),0 0 10px rgba(0,0,0,0.9); transition:opacity 0.2s; }
+    .tl-label { font-family:var(--ff-mono); font-size:0.46rem; letter-spacing:0.06em; color:rgba(0,0,0,0.72); white-space:nowrap; pointer-events:none; line-height:1; transition:opacity 0.2s; }
     #tl-range-badge { position:absolute; top:50%; left:50%; transform:translate(-50%,-55%); font-family:var(--ff-mono); font-size:0.48rem; letter-spacing:0.16em; color:rgba(255,215,0,0.42); pointer-events:none; white-space:nowrap; text-shadow:0 0 8px rgba(0,0,0,0.9); }
     #tl-range-badge.tl-loading { animation:tl-pulse 0.75s ease-in-out infinite; }
     @keyframes tl-pulse { 0%,100%{opacity:0.35} 50%{opacity:0.90} }
     @media(max-width:1099px){ #tl-track{left:10px;right:10px} }
-    @media(max-width:767px){ #timeline-bar{bottom:28px;height:18px} #tl-track{height:6px;margin-top:-3px;left:10px;right:10px} .tl-handle{width:8px;height:18px;margin-top:-9px} .tl-label{font-size:0.44rem;bottom:calc(100% + 3px)} #tl-range-badge{font-size:0.42rem} }
+    @media(max-width:767px){ #timeline-bar{bottom:28px;height:18px} #tl-track{height:6px;margin-top:-3px;left:10px;right:10px} .tl-handle{width:30px;height:18px;margin-top:-9px} .tl-label{font-size:0.38rem;letter-spacing:0.04em} #tl-range-badge{font-size:0.42rem} }
   </style>
 </head>
 <body>
@@ -2069,11 +2069,9 @@ function initTimeline(){
     dimR.style.width=(100-pR)+'%';
     hlL.style.left=pL+'%';
     hlR.style.left=pR+'%';
-    const filtered=timeFrom>min||timeTo<TL_MAX;
     lblL.textContent=String(timeFrom);
     lblR.textContent=String(timeTo);
-    lblL.style.opacity=filtered?'1':'0.50';
-    lblR.style.opacity=filtered?'1':'0.50';
+    const filtered=timeFrom>min||timeTo<TL_MAX;
     badge.textContent=filtered?timeFrom+' — '+timeTo:'';
   }
 
