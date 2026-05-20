@@ -25,17 +25,14 @@ const { tmdb, GENRE_MAP } = require('./_tmdb');
 
 async function countryStatsRange(code, from, to) {
   try {
-    const rangeParams = {
+    const data = await tmdb('/discover/movie', {
       with_origin_country:        code,
       sort_by:                    'vote_count.desc',
+      'vote_count.gte':           1,
       'primary_release_date.gte': `${from}-01-01`,
       'primary_release_date.lte': `${to}-12-31`,
       page:                       1,
-    };
-    // For historical periods (entirely before 1950), skip vote_count filter —
-    // early films rarely accumulate votes even if historically significant.
-    if (to >= 1950) rangeParams['vote_count.gte'] = 2;
-    const data = await tmdb('/discover/movie', rangeParams);
+    });
 
     const films = data.total_results || 0;
 

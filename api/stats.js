@@ -36,11 +36,11 @@ async function getAllCountryCodes() {
 async function countryStats(code) {
   try {
     const [data, earliest] = await Promise.all([
-      // a) total count + genre sample (top-voted)
+      // a) total count + genre sample (all films with at least 1 vote)
       tmdb('/discover/movie', {
         with_origin_country: code,
         sort_by:             'vote_count.desc',
-        'vote_count.gte':    5,
+        'vote_count.gte':    1,
         page:                1,
       }),
       // b) oldest film with at least 1 vote (for filmStart)

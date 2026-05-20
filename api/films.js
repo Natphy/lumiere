@@ -92,7 +92,7 @@ module.exports = async function handler(req, res) {
       with_origin_country: country,
       language:            'it-IT',
       sort_by:             tmdbSort,
-      'vote_count.gte':    2,
+      'vote_count.gte':    1,
       page,
     };
     if (genreId) discoverParams.with_genres = genreId; // genre filter (optional)
@@ -114,14 +114,6 @@ module.exports = async function handler(req, res) {
       discoverParams['primary_release_date.gte'] = '1888-01-01'; // from the dawn of cinema
     }
 
-    // For historical date ranges (entirely before 1950), remove the vote_count filter.
-    // Early cinema films often have very few votes on TMDB even when historically
-    // significant — keeping gte:2 would hide them.
-    // "No active upper bound" means we're in the all-time view → keep default filter.
-    const upperYear = dateTo || (decade ? decade + 9 : null);
-    if (upperYear && upperYear < 1950) {
-      delete discoverParams['vote_count.gte'];
-    }
     const discover = await tmdb('/discover/movie', discoverParams);
 
     const raw = discover.results || [];
