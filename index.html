@@ -1735,19 +1735,22 @@ async function buildPinnedTooltip(code){
 async function toggleTooltipSort(code){
   const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
   const newDir = st.sortDir==='desc' ? 'asc' : 'desc';
-  st.sortDir      = newDir;
-  st.decadeFilter = null;
+  st.sortDir = newDir;
+  // decadeFilter is intentionally preserved: sorting within a selected decade
+  // must stay within that decade, not expand to all years.
 
   if(st.mode==='films'){
-    // Reset loaded items and re-fetch page 1 with new API sort
+    // Reset loaded items and re-fetch page 1 with new API sort,
+    // keeping the currently active decade filter (if any).
     st.allItems=[];
     st.page=0;
     const cardsEl=document.getElementById('tt-cards');
-    if(cardsEl) cardsEl.innerHTML=`<div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento ${newDir==='asc'?'dal 1800…':'film recenti…'}</span></div>`;
+    const decLabel=st.decadeFilter?` anni ${st.decadeFilter}`:'';
+    if(cardsEl) cardsEl.innerHTML=`<div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento${decLabel} ${newDir==='asc'?'dal più vecchio…':'dal più recente…'}</span></div>`;
     const moreEl=document.getElementById('tt-load-more');
     if(moreEl) moreEl.remove();
 
-    const {data, totalPages, totalResults}=await fetchCountryData(code, 1, newDir);
+    const {data, totalPages, totalResults}=await fetchCountryData(code, 1, newDir, st.tmdbGenre||null, st.decadeFilter||null);
     if(selectedCode!==code) return;
     st.allItems  = [...data];
     st.page      = 1;
