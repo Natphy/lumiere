@@ -259,6 +259,8 @@
     .tl-handle:hover,.tl-handle.tl-active { background:linear-gradient(180deg,#fff,#ffe87a); box-shadow:0 0 16px rgba(255,215,0,1),0 0 30px rgba(255,215,0,0.45); }
     .tl-label { position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%); font-family:var(--ff-mono); font-size:0.50rem; letter-spacing:0.10em; color:var(--gold); white-space:nowrap; pointer-events:none; text-shadow:0 1px 6px rgba(0,0,0,1),0 0 10px rgba(0,0,0,0.9); transition:opacity 0.2s; }
     #tl-range-badge { position:absolute; top:50%; left:50%; transform:translate(-50%,-55%); font-family:var(--ff-mono); font-size:0.48rem; letter-spacing:0.16em; color:rgba(255,215,0,0.42); pointer-events:none; white-space:nowrap; text-shadow:0 0 8px rgba(0,0,0,0.9); }
+    #tl-range-badge.tl-loading { animation:tl-pulse 0.75s ease-in-out infinite; }
+    @keyframes tl-pulse { 0%,100%{opacity:0.35} 50%{opacity:0.90} }
     @media(max-width:1099px){ #tl-track{left:10px;right:10px} }
     @media(max-width:767px){ #timeline-bar{bottom:28px;height:18px} #tl-track{height:6px;margin-top:-3px;left:10px;right:10px} .tl-handle{width:8px;height:18px;margin-top:-9px} .tl-label{font-size:0.44rem;bottom:calc(100% + 3px)} #tl-range-badge{font-size:0.42rem} }
   </style>
@@ -536,7 +538,13 @@ function cacheClear() {
 // ── Runtime counters ────────────────────────────────────
 // COUNTRY_STATS — populated at startup from /api/stats
 // Shape: { XX: { films: N, directors: N, actors: N }, … }
-let COUNTRY_STATS = {};
+let COUNTRY_STATS      = {};
+// All-time baseline (saved once after initStats). Used to restore after range reset.
+let COUNTRY_STATS_BASE = {};
+// Client-side range cache: key = "from-to" → rangeData object
+let statsRangeCache    = {};
+// Prevents overlapping in-flight range requests
+let statsRangePending  = false;
 let maxFilmCount = 1, maxActorCount = 1, maxDirectorCount = 1;
 
 // Per-country data (populated lazily on first click)
@@ -560,6 +568,7 @@ async function initStats() {
   const cached = cacheGet('stats');
   if (cached && Object.keys(cached).length > 5) {
     COUNTRY_STATS = cached;
+    saveBaseStats();
     _applyStats();
     return;
   }
@@ -569,6 +578,7 @@ async function initStats() {
     if (!res.ok) throw new Error('stats HTTP ' + res.status);
     COUNTRY_STATS = await res.json();
     cacheSet('stats', COUNTRY_STATS);
+    saveBaseStats();
     _applyStats();
   } catch (err) {
     console.warn('Lumière initStats error:', err);
@@ -590,6 +600,14 @@ function _applyStats() {
   buildMosaicLayout();
   updateStats();
   renderRightPanel();
+}
+
+// Save a deep copy of COUNTRY_STATS as the all-time baseline.
+// Called once after the initial stats load so we can restore it
+// when the timeline range is reset to full.
+function saveBaseStats() {
+  COUNTRY_STATS_BASE = JSON.parse(JSON.stringify(COUNTRY_STATS));
+  statsRangeCache    = {};   // invalidate any cached range data
 }
 
 // ── Pagination state for the open tooltip ─────────────────
@@ -847,16 +865,21 @@ function getFilteredDirectors(code){
 function isDimmed(code){
   if(timeFrom<=modeDecadeMin() && timeTo>=TL_MAX) return false;
 
+  // When range stats are loaded, dim tiles whose count dropped to 0 in the range.
+  const rangeKey=`${timeFrom}-${timeTo}`;
+  if(statsRangeCache[rangeKey]){
+    const s=COUNTRY_STATS[code]||{};
+    const count=viewMode==='films'?s.films:viewMode==='directors'?s.directors:s.actors;
+    return count===0;
+  }
+
+  // Fallback (range data not yet loaded): use cinema-start heuristic
   let start;
   const s=COUNTRY_STATS[code]||{};
 
   if(viewMode==='films'){
-    // TMDB-accurate: year of the oldest film with vote_count ≥ 1
     start=s.filmStart||CINEMA_START[code]||1895;
   } else {
-    // People modes: use minimum born year from already-loaded person cache,
-    // otherwise fall back to filmStart (active era ≈ born era for the purpose
-    // of coarse mosaic filtering).
     const people=viewMode==='directors'
       ? (COUNTRY_DIRECTORS[code]||[])
       : (COUNTRY_ACTORS[code]||[]);
@@ -1914,7 +1937,7 @@ async function updateData(){
   btn.classList.add('loading','active');btn.textContent='AGGIORNAMENTO';
   try {
     cacheClear();
-    COUNTRY_STATS={};
+    COUNTRY_STATS={}; COUNTRY_STATS_BASE={}; statsRangeCache={};
     LOADED_FILMS=[]; LOADED_DIRECTORS=[]; LOADED_ACTORS=[];
     Object.keys(COUNTRY_FILMS).forEach(k=>delete COUNTRY_FILMS[k]);
     Object.keys(COUNTRY_DIRECTORS).forEach(k=>delete COUNTRY_DIRECTORS[k]);
@@ -2027,7 +2050,28 @@ function initTimeline(){
   }
 
   function applyFilter(){
-    buildMosaicLayout();
+    const min=modeDecadeMin();
+    const isFullRange=timeFrom<=min && timeTo>=TL_MAX;
+
+    if(isFullRange){
+      // Restore all-time baseline stats when range is reset
+      if(Object.keys(COUNTRY_STATS_BASE).length){
+        COUNTRY_STATS=JSON.parse(JSON.stringify(COUNTRY_STATS_BASE));
+        _applyStats();
+      } else {
+        buildMosaicLayout();
+      }
+      return;
+    }
+
+    const rangeKey=`${timeFrom}-${timeTo}`;
+    if(statsRangeCache[rangeKey]){
+      _applyRangeStats(statsRangeCache[rangeKey]);
+      return;
+    }
+
+    // Fire async fetch — non-blocking
+    _fetchRangeStats(timeFrom, timeTo, rangeKey);
   }
 
   // Expose to module scope so external callers (mode switch, earliest fetch) can trigger them
@@ -2096,6 +2140,49 @@ function initTimeline(){
   });
 
   updatePos();
+}
+
+// ── Range stats helpers ─────────────────────────────────────────────────────
+// Fetch per-country stats filtered to [from, to] from /api/stats-range.
+// Results are cached client-side; the badge shows a pulsing indicator while loading.
+async function _fetchRangeStats(from, to, rangeKey){
+  if(statsRangePending) return;
+  statsRangePending=true;
+
+  const badge=document.getElementById('tl-range-badge');
+  if(badge){ badge.textContent=from+' — '+to; badge.classList.add('tl-loading'); }
+
+  try {
+    const codes=Object.keys(COUNTRY_STATS_BASE).join(',');
+    const url=`${API_BASE}/stats-range?from=${from}&to=${to}&codes=${encodeURIComponent(codes)}`;
+    const res=await fetch(url);
+    if(!res.ok) throw new Error('stats-range HTTP '+res.status);
+    const data=await res.json();
+    statsRangeCache[rangeKey]=data;
+    _applyRangeStats(data);
+  } catch(err){
+    console.warn('Lumière range stats error:',err);
+    buildMosaicLayout();   // fallback: rebuild with current (unfiltered) stats
+  } finally {
+    statsRangePending=false;
+    if(badge) badge.classList.remove('tl-loading');
+  }
+}
+
+// Merge range counts into COUNTRY_STATS, preserving filmStart and other metadata.
+function _applyRangeStats(rangeData){
+  Object.keys(COUNTRY_STATS_BASE).forEach(code=>{
+    const base =COUNTRY_STATS_BASE[code]||{};
+    const range=rangeData[code]||{films:0,directors:0,actors:0,genres:{}};
+    COUNTRY_STATS[code]={
+      ...base,
+      films:     range.films,
+      directors: range.directors,
+      actors:    range.actors,
+      genres:    range.genres,
+    };
+  });
+  _applyStats();   // recalculates maxFilmCount, rebuilds mosaic, updates panels
 }
 
 // Derive earliest years and update tlMinByMode, then reposition left handle.
