@@ -1931,19 +1931,85 @@ async function filterTooltipCat(code, cat){
 }
 
 // ── Tooltip search ───────────────────────────────────────────
+// Debounce timer for TMDB fallback search
+let _searchTimer = null;
+
 function searchTooltip(code, query){
   const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
   st.searchQuery = query && query.trim() ? query : null;
   _refreshCards(code);
-  // Build suggestions
+
+  // Cancel any pending TMDB fallback
+  if(_searchTimer){ clearTimeout(_searchTimer); _searchTimer=null; }
+
   const suggEl=document.getElementById('tt-search-suggs');
   if(!suggEl) return;
   if(!query || !query.trim()){ suggEl.style.display='none'; return; }
+
   const isFilms     = st.mode==='films';
   const isDirectors = st.mode==='directors';
-  const html = _buildSuggestions(code, query, st.allItems, isFilms, isDirectors);
-  if(html){ suggEl.innerHTML=html; suggEl.style.display='block'; }
-  else     { suggEl.style.display='none'; }
+
+  // Local suggestions from already-loaded items
+  const localHtml = _buildSuggestions(code, query, st.allItems, isFilms, isDirectors);
+  if(localHtml){
+    suggEl.innerHTML=localHtml; suggEl.style.display='block';
+  } else {
+    // No local matches → show spinner and schedule TMDB fallback search
+    if(query.trim().length >= 2){
+      suggEl.innerHTML=`<div class="tt-search-sugg" style="opacity:0.5;cursor:default">
+        <span class="tt-search-sugg-name">Ricerca in corso su TMDB…</span></div>`;
+      suggEl.style.display='block';
+      _searchTimer = setTimeout(()=>_tmdbFallbackSearch(code, query), 600);
+    } else {
+      suggEl.style.display='none';
+    }
+  }
+}
+
+async function _tmdbFallbackSearch(code, query){
+  const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
+  if((st.searchQuery||'').trim().toLowerCase() !== query.trim().toLowerCase()) return; // stale
+  const suggEl=document.getElementById('tt-search-suggs'); if(!suggEl) return;
+
+  const type = st.mode==='films' ? 'films' : st.mode==='directors' ? 'directors' : 'actors';
+  try {
+    const res  = await fetch(`${API_BASE}/search?country=${code}&q=${encodeURIComponent(query)}&type=${type}`);
+    if(!res.ok) throw new Error('search HTTP '+res.status);
+    const json = await res.json();
+    const results = json.results || [];
+
+    // Guard: query may have changed while we were waiting
+    if((st.searchQuery||'').trim().toLowerCase() !== query.trim().toLowerCase()) return;
+
+    if(!results.length){
+      suggEl.innerHTML=`<div class="tt-search-sugg" style="opacity:0.45;cursor:default">
+        <span class="tt-search-sugg-name">Nessun risultato su TMDB per «${query}»</span></div>`;
+      suggEl.style.display='block';
+      return;
+    }
+
+    // Merge TMDB results into allItems (avoid duplicates by id)
+    const existingIds = new Set(st.allItems.map(x=>x.id||x.tmdbId));
+    const newItems = results.filter(r=>{
+      const rid = r.id || `tmdb_${r.tmdbId}`;
+      return !existingIds.has(rid) && !existingIds.has(r.tmdbId);
+    });
+    if(newItems.length) st.allItems.push(...newItems);
+
+    // Re-run local filter (now includes TMDB results)
+    _refreshCards(code);
+
+    // Rebuild suggestions from merged items
+    const isFilms     = st.mode==='films';
+    const isDirectors = st.mode==='directors';
+    const html = _buildSuggestions(code, query, st.allItems, isFilms, isDirectors);
+    if(html){ suggEl.innerHTML=html; suggEl.style.display='block'; }
+    else     { suggEl.style.display='none'; }
+
+  } catch(err){
+    console.warn('Lumière TMDB fallback search error:', err);
+    if(suggEl) suggEl.style.display='none';
+  }
 }
 
 function applySearchSuggestion(code, text){
