@@ -565,8 +565,10 @@ function showSpinner(on) {
 }
 
 // ── Stats fetch — called once at startup ─────────────────
-// forceRefresh=true bypasses both local cache and the Vercel CDN cache so
-// that AGGIORNA always retrieves live data from TMDB, not a stale response.
+// forceRefresh=true skips the localStorage cache so AGGIORNA always reads
+// from the Vercel CDN (reliable, pre-validated data) instead of a potentially
+// stale or malformed localStorage entry.  The CDN itself is intentionally kept
+// intact — bypassing it would fire 500+ raw TMDB calls and risk rate-limiting.
 async function initStats(forceRefresh = false) {
   if (!forceRefresh) {
     const cached = cacheGet('stats');
@@ -577,15 +579,13 @@ async function initStats(forceRefresh = false) {
       return;
     }
   }
-  // Keep a snapshot so we can restore if the fresh fetch returns garbage.
+  // Keep a snapshot so we can restore if the fetch returns garbage.
   const prevStats = Object.keys(COUNTRY_STATS).length > 5
     ? JSON.parse(JSON.stringify(COUNTRY_STATS)) : null;
   try {
     showSpinner(true);
-    // Cache-Control: no-cache forces the CDN to revalidate with the origin,
-    // bypassing the 24-hour Vercel edge-cache that AGGIORNA cannot clear otherwise.
-    const fetchOpts = forceRefresh ? { cache: 'no-cache' } : {};
-    const res = await fetch(API_BASE + '/stats', fetchOpts);
+    // Always use the CDN-cached response — no cache-bypass headers.
+    const res = await fetch(API_BASE + '/stats');
     if (!res.ok) throw new Error('stats HTTP ' + res.status);
     const fresh = await res.json();
     // Only accept the response if it has a meaningful number of countries.
