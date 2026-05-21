@@ -565,29 +565,50 @@ function showSpinner(on) {
 }
 
 // ── Stats fetch — called once at startup ─────────────────
-async function initStats() {
-  const cached = cacheGet('stats');
-  if (cached && Object.keys(cached).length > 5) {
-    COUNTRY_STATS = cached;
-    saveBaseStats();
-    _applyStats();
-    return;
+// forceRefresh=true bypasses both local cache and the Vercel CDN cache so
+// that AGGIORNA always retrieves live data from TMDB, not a stale response.
+async function initStats(forceRefresh = false) {
+  if (!forceRefresh) {
+    const cached = cacheGet('stats');
+    if (cached && Object.keys(cached).length > 5) {
+      COUNTRY_STATS = cached;
+      saveBaseStats();
+      _applyStats();
+      return;
+    }
   }
+  // Keep a snapshot so we can restore if the fresh fetch returns garbage.
+  const prevStats = Object.keys(COUNTRY_STATS).length > 5
+    ? JSON.parse(JSON.stringify(COUNTRY_STATS)) : null;
   try {
     showSpinner(true);
-    const res = await fetch(API_BASE + '/stats');
+    // Cache-Control: no-cache forces the CDN to revalidate with the origin,
+    // bypassing the 24-hour Vercel edge-cache that AGGIORNA cannot clear otherwise.
+    const fetchOpts = forceRefresh ? { cache: 'no-cache' } : {};
+    const res = await fetch(API_BASE + '/stats', fetchOpts);
     if (!res.ok) throw new Error('stats HTTP ' + res.status);
-    COUNTRY_STATS = await res.json();
+    const fresh = await res.json();
+    // Only accept the response if it has a meaningful number of countries.
+    // Reject empty / truncated responses that would wipe out the mosaic data.
+    if (Object.keys(fresh).length < 10) throw new Error('stats response too small');
+    COUNTRY_STATS = fresh;
     cacheSet('stats', COUNTRY_STATS);
     saveBaseStats();
     _applyStats();
   } catch (err) {
     console.warn('Lumière initStats error:', err);
-    // Fallback: give every country a placeholder count so mosaic renders
-    Object.keys(COUNTRIES).forEach(c => {
-      COUNTRY_STATS[c] = { films: 10, directors: 4, actors: 30 };
-    });
-    _applyStats();
+    if (prevStats) {
+      // Restore the previous good data — better to show stale mosaic than empty one
+      COUNTRY_STATS = prevStats;
+      saveBaseStats();
+      _applyStats();
+    } else {
+      // First load with no prior data: placeholder so mosaic can at least render
+      Object.keys(COUNTRIES).forEach(c => {
+        if (!COUNTRY_STATS[c]) COUNTRY_STATS[c] = { films: 10, directors: 4, actors: 30 };
+      });
+      _applyStats();
+    }
   } finally {
     showSpinner(false);
   }
@@ -1984,7 +2005,10 @@ async function updateData(){
     Object.keys(COUNTRY_DIRECTORS).forEach(k=>delete COUNTRY_DIRECTORS[k]);
     Object.keys(COUNTRY_ACTORS).forEach(k=>delete COUNTRY_ACTORS[k]);
     if(selectedCode) closePinnedTooltip();
-    await initStats();
+    // forceRefresh=true bypasses the Vercel CDN 24-h edge cache
+    await initStats(true);
+    // Reset the timeline to full range so the mosaic is consistent with the handles
+    if(tlApplyFilter) tlApplyFilter();
     const now=new Date();
     const months=['GENNAIO','FEBBRAIO','MARZO','APRILE','MAGGIO','GIUGNO','LUGLIO','AGOSTO','SETTEMBRE','OTTOBRE','NOVEMBRE','DICEMBRE'];
     document.getElementById('last-update').textContent=`ULTIMO AGGIORNAMENTO: ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
@@ -2093,7 +2117,12 @@ function initTimeline(){
     const isFullRange=timeFrom<=min && timeTo>=TL_MAX;
 
     if(isFullRange){
-      // Restore all-time baseline stats when range is reset
+      // Restore all-time baseline stats when range is reset.
+      // Self-heal: if COUNTRY_STATS_BASE is somehow empty but COUNTRY_STATS
+      // has live data (e.g. after a partial AGGIORNA), rebuild the base on-the-fly.
+      if(!Object.keys(COUNTRY_STATS_BASE).length && Object.keys(COUNTRY_STATS).length > 5){
+        saveBaseStats();
+      }
       if(Object.keys(COUNTRY_STATS_BASE).length){
         COUNTRY_STATS=JSON.parse(JSON.stringify(COUNTRY_STATS_BASE));
         _applyStats();
