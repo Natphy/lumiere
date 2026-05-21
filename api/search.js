@@ -107,18 +107,21 @@ module.exports = async function handler(req, res) {
         page:     1,
       });
 
-      // Keep people whose known_for films include at least one film from this country,
-      // OR whose known_for_department matches
       const dept = type === 'directors' ? 'Directing' : 'Acting';
+      const lang = _langForCountry(country);
 
       const raw = (data.results || [])
         .filter(p => {
+          // Must work in the right department
           if (p.known_for_department !== dept) return false;
-          // Check known_for films for country match
           const kf = p.known_for || [];
+          // If TMDB returned known_for entries, check for country/language match.
+          // If known_for is empty (happens for older/less prominent artists on TMDB),
+          // still include them — the search query itself is specific enough.
+          if (kf.length === 0) return true;
           return kf.some(f =>
             (f.origin_country || []).includes(country) ||
-            f.original_language === _langForCountry(country)
+            (lang && f.original_language === lang)
           );
         })
         .slice(0, 10);

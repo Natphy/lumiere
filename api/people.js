@@ -1,13 +1,14 @@
 /**
  * /api/people?country=XX&type=director|actor
  *
- * Aggregates directors (or actors) from the most-voted AND most-recent films
- * of a country, to ensure both classic and contemporary talent is covered.
+ * Aggregates directors (or actors) from top-voted, highest-rated AND most-recent
+ * films of a country, to cover popular, arthouse and contemporary talent.
  *
  * Strategy:
- *  - Pass A: 5 pages sorted by vote_count.desc  (≈100 popular/classic films)
- *  - Pass B: 3 pages sorted by primary_release_date.desc (≈60 recent films)
- *  → deduped by film ID → up to ~160 unique films
+ *  - Pass A: 5 pages sorted by vote_count.desc   (≈100 popular/classic films)
+ *  - Pass B: 3 pages sorted by vote_average.desc  (≈60 highest-rated films — arthouse)
+ *  - Pass C: 3 pages sorted by primary_release_date.desc (≈60 recent films)
+ *  → deduped by film ID → up to ~220 unique films per country
  *  - Cast: top 10 billed actors per film (was 5)
  *  - vote_count.gte: 5 (was 20) — includes arthouse / classic films
  *  - Returns top 50 people by film-count; enriches top 30 with bio
@@ -57,22 +58,28 @@ module.exports = async function handler(req, res) {
 
   try {
     // ── Step 1: collect films ────────────────────────────────────────────────
-    // Pass A — most voted (covers classics and crowd favourites)
-    const passAPages = [1, 2, 3, 4, 5];
-    // Pass B — most recent (covers contemporary talent)
-    const passBPages = [1, 2, 3];
-
-    const [passA, passB] = await Promise.all([
-      Promise.all(passAPages.map(p => discoverPage(country, 'vote_count.desc',           p))),
-      Promise.all(passBPages.map(p => discoverPage(country, 'primary_release_date.desc', p))),
+    // Pass A — most voted  (popular films, crowd favourites, blockbusters)
+    // Pass B — highest rated with a minimum of 50 votes (arthouse, classics, auteur cinema)
+    // Pass C — most recent (contemporary talent)
+    const [passA, passB, passC] = await Promise.all([
+      Promise.all([1,2,3,4,5].map(p => discoverPage(country, 'vote_count.desc',           p))),
+      Promise.all([1,2,3].map(p =>
+        tmdb('/discover/movie', {
+          with_origin_country: country,
+          sort_by:             'vote_average.desc',
+          'vote_count.gte':    50,          // meaningful average, not 1-vote flukes
+          page:                p,
+        }).then(d => d.results || []).catch(() => [])
+      )),
+      Promise.all([1,2,3].map(p => discoverPage(country, 'primary_release_date.desc', p))),
     ]);
 
     // Deduplicate by TMDB film ID
     const filmMap = new Map();
-    [...passA.flat(), ...passB.flat()].forEach(f => {
+    [...passA.flat(), ...passB.flat(), ...passC.flat()].forEach(f => {
       if (!filmMap.has(f.id)) filmMap.set(f.id, f);
     });
-    const films = [...filmMap.values()];   // up to ~160 unique films
+    const films = [...filmMap.values()];   // up to ~220 unique films
 
     // ── Step 2: fetch credits for all films (batches of 10) ─────────────────
     const allCredits = [];
