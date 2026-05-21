@@ -85,15 +85,41 @@ function _langForCountry(code) {
     IT:'it', FR:'fr', DE:'de', ES:'es', JP:'ja', KR:'ko',
     RU:'ru', PT:'pt', PL:'pl', SE:'sv', DK:'da', NO:'nb',
     HU:'hu', CZ:'cs', RO:'ro', HK:'zh', TW:'zh', CN:'zh',
-    IR:'fa', IN:'hi', AR:'es', BR:'pt', AU:'en', NZ:'en',
-    IE:'en', CA:'en', BE:'fr', AT:'de',
+    IR:'fa', IN:'hi', AR:'es', BR:'pt',
+    // English-speaking countries (US and GB were previously missing — root cause
+    // of "2001: A Space Odyssey" not appearing in US search: TMDB stores it as
+    // origin_country=GB, original_language=en; without US→'en' the film was
+    // silently dropped by _matchesCountry)
+    US:'en', GB:'en', AU:'en', NZ:'en', IE:'en', CA:'en',
+    BE:'fr', AT:'de',
   };
   return MAP[code] || null;
 }
 
+// Countries that share the same primary language and commonly co-produce films
+// (e.g. US/GB/AU/CA all use 'en'). Used to catch cross-country productions
+// like US-British films that TMDB may register under only one origin_country.
+const LANG_PEERS = {
+  en: new Set(['US','GB','AU','CA','IE','NZ']),
+  es: new Set(['ES','MX','AR']),
+  zh: new Set(['CN','HK','TW']),
+  pt: new Set(['PT','BR']),
+  fr: new Set(['FR','BE','CA']),
+  de: new Set(['DE','AT','CH']),
+};
+
 function _matchesCountry(f, country, lang) {
-  return (f.origin_country || []).includes(country) ||
-         (lang && f.original_language === lang);
+  const origins = f.origin_country || [];
+  // Direct country match
+  if (origins.includes(country)) return true;
+  // Language match (same language → likely same linguistic cinema space)
+  if (lang && f.original_language === lang) return true;
+  // Peer-country match: catches co-productions stored under a sibling country
+  // (e.g. "2001: A Space Odyssey" origin_country=GB, searched from US)
+  if (lang && LANG_PEERS[lang]) {
+    if (origins.some(c => LANG_PEERS[lang].has(c))) return true;
+  }
+  return false;
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -205,10 +231,7 @@ module.exports = async function handler(req, res) {
         const kf = p.known_for || [];
         // Accept people with empty known_for (older/less-prominent on TMDB)
         if (kf.length === 0) return true;
-        return kf.some(f =>
-          (f.origin_country || []).includes(country) ||
-          (lang && f.original_language === lang)
-        );
+        return kf.some(f => _matchesCountry(f, country, lang));
       })
       // Deduplicate by id
       .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
