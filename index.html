@@ -233,10 +233,31 @@
     .tt-accordion.open .tt-accordion-body { max-height:360px; }
     .tt-accordion .tt-cat-row { padding-top:2px; }
     /* Sort button — always visible, full width */
-    .tt-sort-wrap { padding:8px 20px 10px; flex-shrink:0; }
-    .tt-sort-wrap .tt-ctrl-btn { width:100%; justify-content:center; }
-    @media(max-width:1099px){ .tt-accordion-hdr{padding:7px 20px} .tt-sort-wrap{padding:7px 20px 9px} }
-    @media(max-width:767px){ .tt-accordion-hdr{padding:6px 20px;font-size:0.61rem} .tt-sort-wrap{padding:6px 20px 8px} }
+    .tt-sort-wrap { padding:8px 20px 10px; flex-shrink:0; display:flex; gap:8px; align-items:stretch; }
+    .tt-sort-wrap .tt-ctrl-btn { flex:1; justify-content:center; }
+    /* Search field — same gold-border style as tt-ctrl-btn */
+    .tt-search-wrap { position:relative; flex:1; min-width:0; }
+    .tt-search-input { width:100%; box-sizing:border-box; display:block;
+      background:rgba(7,9,15,0.82); border:1px solid var(--gold); color:var(--gold);
+      font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.1em;
+      padding:5px 12px; border-radius:4px; outline:none;
+      transition:box-shadow 0.25s; text-transform:uppercase; height:100%; }
+    .tt-search-input:focus { box-shadow:0 0 14px rgba(255,215,0,0.35); }
+    .tt-search-input::placeholder { color:rgba(255,215,0,0.35); }
+    /* Suggestions dropdown */
+    .tt-search-suggs { position:absolute; top:100%; left:0; right:0; z-index:300;
+      background:rgba(7,9,15,0.97); border:1px solid rgba(255,215,0,0.35);
+      border-top:none; border-radius:0 0 4px 4px; display:none; overflow:hidden; }
+    .tt-search-sugg { padding:7px 12px; font-family:var(--ff-mono); font-size:0.67rem;
+      color:var(--text); cursor:pointer; display:flex; gap:10px; align-items:baseline;
+      border-bottom:1px solid rgba(255,215,0,0.07); }
+    .tt-search-sugg:last-child { border-bottom:none; }
+    .tt-search-sugg:hover,.tt-search-sugg:focus { background:rgba(255,215,0,0.08); color:var(--gold); }
+    .tt-search-sugg-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tt-search-sugg-meta { color:rgba(255,215,0,0.45); font-size:0.61rem; flex-shrink:0; }
+    /* Mobile/tablet: column, search on top */
+    @media(max-width:1099px){ .tt-accordion-hdr{padding:7px 20px} .tt-sort-wrap{padding:7px 20px 9px; flex-direction:column} .tt-search-wrap{order:-1} }
+    @media(max-width:767px){ .tt-accordion-hdr{padding:6px 20px;font-size:0.61rem} .tt-sort-wrap{padding:6px 20px 8px} .tt-search-input{font-size:0.62rem;padding:4px 10px} }
 
     /* ── API SPINNER ── */
     #api-spinner { position:fixed; top:72px; left:50%; transform:translateX(-50%); z-index:500; display:flex; align-items:center; gap:8px; background:rgba(7,9,15,0.92); border:1px solid rgba(255,215,0,0.3); border-radius:20px; padding:6px 14px 6px 10px; font-family:var(--ff-mono); font-size:0.68rem; letter-spacing:0.14em; color:var(--gold); pointer-events:none; }
@@ -1516,7 +1537,7 @@ function _actorType(person){
 }
 
 // ── Apply sort + year + category filter to an items array ──
-function _applyControls(items, isFilms, isDirectors, sortDir, decadeFilter, catFilter){
+function _applyControls(items, isFilms, isDirectors, sortDir, decadeFilter, catFilter, searchQuery){
   let out = [...items];
   if(decadeFilter!=null) out=out.filter(x=>{
     const y=_yearOf(x,isFilms);
@@ -1526,6 +1547,24 @@ function _applyControls(items, isFilms, isDirectors, sortDir, decadeFilter, catF
     if(isFilms)        out=out.filter(f=>f.genre===catFilter);
     else if(isDirectors) out=out.filter(d=>_dirEra(d)===catFilter);
     else                 out=out.filter(a=>_actorType(a)===catFilter);
+  }
+  // Free-text search: matches title/name, director, actors, year, known-for titles
+  if(searchQuery && searchQuery.trim()){
+    const q=searchQuery.trim().toLowerCase();
+    out=out.filter(item=>{
+      if(isFilms){
+        return (item.title||'').toLowerCase().includes(q)
+          ||(item.itTitle||'').toLowerCase().includes(q)
+          ||(item.director||'').toLowerCase().includes(q)
+          ||(item.genre||'').toLowerCase().includes(q)
+          ||String(item.year||'').includes(q)
+          ||(item.actors||[]).some(a=>a.toLowerCase().includes(q));
+      } else {
+        return (item.name||'').toLowerCase().includes(q)
+          ||String(item.born||'').includes(q)
+          ||(item.knownFor||[]).some(t=>t.toLowerCase().includes(q));
+      }
+    });
   }
   out.sort((a,b)=> sortDir==='desc'
     ? (_yearOf(b,isFilms)||0)-(_yearOf(a,isFilms)||0)
@@ -1641,8 +1680,18 @@ function _buildControls(code, st, isFilms, isDirectors){
   const sortTip = st.sortDir==='desc'
     ? (isFilms ? 'Ordina dai più vecchi' : 'Ordina dai più vecchi')
     : (isFilms ? 'Ordina dai più giovani' : 'Ordina dai più giovani');
+  const ph = isFilms ? 'Cerca titolo, regista…' : isDirectors ? 'Cerca regista…' : 'Cerca attore…';
+  const safeQ = (st.searchQuery||'').replace(/"/g,'&quot;');
   return `<div class="tt-sort-wrap">
     <button class="tt-ctrl-btn" id="tt-sort-btn" onclick="toggleTooltipSort('${code}')" title="Inverti ordine">${sortTip}</button>
+    <div class="tt-search-wrap">
+      <input class="tt-search-input" id="tt-search-input" type="search"
+        placeholder="${ph}" value="${safeQ}" autocomplete="off" spellcheck="false"
+        oninput="searchTooltip('${code}',this.value)"
+        onkeydown="if(event.key==='Escape'){this.value='';searchTooltip('${code}','');}"
+        onblur="setTimeout(()=>{const s=document.getElementById('tt-search-suggs');if(s)s.style.display='none';},180)" />
+      <div class="tt-search-suggs" id="tt-search-suggs"></div>
+    </div>
   </div>`;
 }
 
@@ -1663,7 +1712,7 @@ function _refreshCards(code){
   if(!st) return;
   const isFilms     = st.mode==='films';
   const isDirectors = st.mode==='directors';
-  const visible     = _applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.decadeFilter, st.catFilter);
+  const visible     = _applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.decadeFilter, st.catFilter, st.searchQuery);
   const cardsEl     = document.getElementById('tt-cards');
   const moreEl      = document.getElementById('tt-load-more');
   if(cardsEl) cardsEl.innerHTML = _renderCards(visible, isFilms, isDirectors);
@@ -1745,7 +1794,7 @@ async function buildPinnedTooltip(code){
   _ttState[stKey]={ code, mode:viewMode, sortDir:'desc', decadeFilter:null, catFilter:null,
                     tmdbGenre:null, allItems:rangeItems, page:1, totalPages,
                     totalResults: isFilms ? totalResults : rangeItems.length,
-                    validDecades };   // null for people; filtered array for films
+                    validDecades, searchQuery:null };   // null for people; filtered array for films
   const st=_ttState[stKey];
 
   // Subtitle — mention range when active
@@ -1754,7 +1803,7 @@ async function buildPinnedTooltip(code){
     ? `Top ${rangeItems.length} su ${totalResults.toLocaleString('it-IT')} totali TMDB${rangeLabel} · ${c.continent.toUpperCase()}`
     : `${rangeItems.length} ${modeLabel} nel periodo${rangeLabel} · ${c.continent.toUpperCase()}`;
 
-  const visible=_applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.decadeFilter, st.catFilter);
+  const visible=_applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.decadeFilter, st.catFilter, st.searchQuery);
 
   let html=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${sub}</div></div><button class="modal-close" type="button" onclick="closePinnedTooltip()">✕</button></div>`;
   html+=_buildCatChips(code, st, isFilms, isDirectors);
@@ -1879,6 +1928,86 @@ async function filterTooltipCat(code, cat){
   }
 
   _refreshCards(code);
+}
+
+// ── Tooltip search ───────────────────────────────────────────
+function searchTooltip(code, query){
+  const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
+  st.searchQuery = query && query.trim() ? query : null;
+  _refreshCards(code);
+  // Build suggestions
+  const suggEl=document.getElementById('tt-search-suggs');
+  if(!suggEl) return;
+  if(!query || !query.trim()){ suggEl.style.display='none'; return; }
+  const isFilms     = st.mode==='films';
+  const isDirectors = st.mode==='directors';
+  const html = _buildSuggestions(code, query, st.allItems, isFilms, isDirectors);
+  if(html){ suggEl.innerHTML=html; suggEl.style.display='block'; }
+  else     { suggEl.style.display='none'; }
+}
+
+function applySearchSuggestion(code, text){
+  const st=_ttState[`${viewMode}_${code}`]; if(!st) return;
+  st.searchQuery = text;
+  const inp=document.getElementById('tt-search-input');
+  if(inp){ inp.value=text; }
+  const suggEl=document.getElementById('tt-search-suggs');
+  if(suggEl) suggEl.style.display='none';
+  _refreshCards(code);
+}
+
+function _buildSuggestions(code, query, items, isFilms, isDirectors){
+  const q=query.trim().toLowerCase();
+  if(!q) return '';
+  const safeCode=code.replace(/'/g,"\\'");
+  const seen=new Set();
+  const matches=[];
+  for(const item of items){
+    if(matches.length>=6) break;
+    if(isFilms){
+      const title    = item.title    || '';
+      const itTitle  = item.itTitle  || '';
+      const director = item.director || '';
+      const label = title.toLowerCase().includes(q) ? title
+                  : itTitle.toLowerCase().includes(q) ? itTitle
+                  : director.toLowerCase().includes(q) ? director
+                  : null;
+      const meta  = title.toLowerCase().includes(q) ? String(item.year||'')
+                  : itTitle.toLowerCase().includes(q) ? String(item.year||'')
+                  : director.toLowerCase().includes(q) ? 'Regista'
+                  : null;
+      if(label && !seen.has(label)){
+        seen.add(label);
+        const safeLabel=label.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+        matches.push(`<div class="tt-search-sugg" tabindex="0"
+          onmousedown="applySearchSuggestion('${safeCode}','${safeLabel}')"
+          onkeydown="if(event.key==='Enter')applySearchSuggestion('${safeCode}','${safeLabel}')">
+          <span class="tt-search-sugg-name">${_highlight(label,q)}</span>
+          <span class="tt-search-sugg-meta">${meta}</span></div>`);
+      }
+    } else {
+      const name=(item.name||'');
+      if(name.toLowerCase().includes(q) && !seen.has(name)){
+        seen.add(name);
+        const born = String(item.born||'');
+        const safeName=name.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+        matches.push(`<div class="tt-search-sugg" tabindex="0"
+          onmousedown="applySearchSuggestion('${safeCode}','${safeName}')"
+          onkeydown="if(event.key==='Enter')applySearchSuggestion('${safeCode}','${safeName}')">
+          <span class="tt-search-sugg-name">${_highlight(name,q)}</span>
+          <span class="tt-search-sugg-meta">${born}</span></div>`);
+      }
+    }
+  }
+  return matches.join('');
+}
+
+function _highlight(text, q){
+  const idx=text.toLowerCase().indexOf(q);
+  if(idx<0) return text.replace(/</g,'&lt;');
+  return text.slice(0,idx).replace(/</g,'&lt;')
+    +'<strong>'+text.slice(idx,idx+q.length).replace(/</g,'&lt;')+'</strong>'
+    +text.slice(idx+q.length).replace(/</g,'&lt;');
 }
 
 // ── Load more (appends next page) ────────────────────────────
