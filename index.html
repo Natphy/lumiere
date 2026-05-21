@@ -2254,29 +2254,25 @@ function _applyRangeStats(rangeData){
 }
 
 // Derive earliest years and update tlMinByMode, then reposition left handle.
-// Films: computed from COUNTRY_STATS.filmStart (already loaded, no extra API call).
-// Directors/actors: from /api/earliest (birth years via TMDB person detail).
+// All three modes use the same floor: the year of the oldest film in TMDB
+// (from COUNTRY_STATS.filmStart, no extra API call).  Using birth years of
+// directors/actors as the floor is wrong — a director born in 1823 worked
+// from ~1888; the timeline should start at 1888, not 1823.
 async function fetchEarliestYears(){
   try {
-    // ── Films: global minimum of all per-country filmStart values ──
+    // Global minimum of all per-country filmStart values (already in COUNTRY_STATS)
     const filmStarts=Object.values(COUNTRY_STATS)
       .map(s=>s.filmStart).filter(y=>y&&y>1800&&y<2026);
     const filmsMin=filmStarts.length?Math.min(...filmStarts):null;
 
-    // ── Directors/actors: birth years from /api/earliest (cached 24 h) ──
-    let earliestData=cacheGet('earliest_people');
-    if(!earliestData){
-      const resp=await fetch(`${API_BASE}/earliest`).then(r=>r.json()).catch(()=>null);
-      if(resp && typeof resp.directors==='number'){
-        earliestData=resp;
-        cacheSet('earliest_people', earliestData);
-      }
-    }
+    // All modes share the same cinema-start floor: you cannot direct or act
+    // in a film before cinema was invented.
+    const modeMin = filmsMin || TL_MIN;
 
     tlMinByMode={
-      films    : filmsMin          || (earliestData?.films)     || TL_MIN,
-      directors: earliestData?.directors || TL_MIN,
-      actors   : earliestData?.actors    || TL_MIN,
+      films    : modeMin,
+      directors: modeMin,
+      actors   : modeMin,
     };
     applyTimelineBounds();
   } catch(e){ /* keep defaults */ }
