@@ -5,17 +5,30 @@
  * Used as fallback when the client-side search finds no results in the
  * already-loaded pages of a country tooltip.
  *
- * Films   → /search/movie?query=…  filtered by origin_country
- * People  → /search/person?query=… filtered by known_for films of that country
+ * ── Films ───────────────────────────────────────────────────────────────────
+ * Two parallel strategies, results merged and deduplicated:
  *
- * Returns up to 10 results enriched with director + top-5 cast (for films)
- * or birth year + known-for titles (for people).
+ *   A) Title search  — /search/movie?query=… (pages 1–3)
+ *      filtered post-fetch by origin_country / original_language.
+ *      Finds films whose title matches the query.
  *
- * Short CDN cache (5 min) so live searches stay fresh.
+ *   B) Person→Film   — /search/person?query=…
+ *      Takes the first matching director/actor, then:
+ *        director → /discover/movie?with_origin_country=XX&with_crew=<id>
+ *        actor    → /discover/movie?with_origin_country=XX&with_cast=<id>
+ *      Finds every film from that country made by / starring that person.
+ *      Typing "Monicelli" in the Italy films tab returns his full filmography.
+ *
+ * ── People (directors / actors) ─────────────────────────────────────────────
+ *   /search/person?query=… filtered by known_for_department.
+ *   known_for=[] is accepted (older/less-prominent artists on TMDB).
+ *
+ * CDN cache: 5 min (search results should stay reasonably fresh).
  */
 const { tmdb, mapGenre } = require('./_tmdb');
 
-// Fetch director + top-5 actors for a film
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
 async function getCredits(filmId) {
   try {
     const data     = await tmdb(`/movie/${filmId}/credits`);
@@ -27,7 +40,6 @@ async function getCredits(filmId) {
   }
 }
 
-// Fetch birth year + known-for titles for a person
 async function getPersonDetail(personId) {
   try {
     const data = await tmdb(`/person/${personId}`, { language: 'it-IT' });
@@ -44,116 +56,30 @@ async function getPersonDetail(personId) {
   }
 }
 
-module.exports = async function handler(req, res) {
-  if (req.method === 'OPTIONS') { res.status(200).end(); return; }
+// Enrich a raw TMDB movie result → Lumière film object
+async function enrichFilm(f, country) {
+  const credits       = await getCredits(f.id);
+  const originalTitle = f.original_title || f.title;
+  const italianTitle  = f.title;
+  return {
+    id:       `tmdb_${f.id}`,
+    tmdbId:   f.id,
+    title:    originalTitle,
+    itTitle:  italianTitle !== originalTitle ? italianTitle : null,
+    year:     f.release_date ? parseInt(f.release_date.slice(0, 4), 10) : null,
+    country,
+    genre:    mapGenre(f.genre_ids),
+    director: credits.director,
+    actors:   credits.actors,
+    synopsis: f.overview || '',
+    trailer:  null,
+    poster:   f.poster_path ? `https://image.tmdb.org/t/p/w300${f.poster_path}` : null,
+    rating:   f.vote_average,
+    votes:    f.vote_count,
+  };
+}
 
-  const country = (req.query.country || 'IT').toUpperCase().slice(0, 2);
-  const q       = (req.query.q || '').trim();
-  const type    = req.query.type || 'films';   // 'films' | 'directors' | 'actors'
-
-  if (!q || q.length < 2) {
-    return res.status(400).json({ error: 'Query troppo corta (min 2 caratteri)' });
-  }
-
-  // Short cache: search results should be reasonably fresh
-  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
-
-  try {
-    if (type === 'films') {
-      // ── Film search ──────────────────────────────────────────────────────
-      const data = await tmdb('/search/movie', {
-        query:    q,
-        language: 'it-IT',
-        page:     1,
-      });
-
-      // Filter to the requested origin country
-      const raw = (data.results || [])
-        .filter(f => (f.origin_country || []).includes(country)
-                  || f.original_language === _langForCountry(country))
-        .slice(0, 10);
-
-      const enriched = await Promise.all(
-        raw.map(async f => {
-          const credits = await getCredits(f.id);
-          const originalTitle = f.original_title || f.title;
-          const italianTitle  = f.title;
-          return {
-            id:       `tmdb_${f.id}`,
-            tmdbId:   f.id,
-            title:    originalTitle,
-            itTitle:  italianTitle !== originalTitle ? italianTitle : null,
-            year:     f.release_date ? parseInt(f.release_date.slice(0, 4), 10) : null,
-            country,
-            genre:    mapGenre(f.genre_ids),
-            director: credits.director,
-            actors:   credits.actors,
-            synopsis: f.overview || '',
-            trailer:  null,
-            poster:   f.poster_path ? `https://image.tmdb.org/t/p/w300${f.poster_path}` : null,
-            rating:   f.vote_average,
-            votes:    f.vote_count,
-          };
-        })
-      );
-
-      return res.status(200).json({ type: 'films', country, query: q, results: enriched });
-
-    } else {
-      // ── Person search (directors or actors) ──────────────────────────────
-      const data = await tmdb('/search/person', {
-        query:    q,
-        language: 'it-IT',
-        page:     1,
-      });
-
-      const dept = type === 'directors' ? 'Directing' : 'Acting';
-      const lang = _langForCountry(country);
-
-      const raw = (data.results || [])
-        .filter(p => {
-          // Must work in the right department
-          if (p.known_for_department !== dept) return false;
-          const kf = p.known_for || [];
-          // If TMDB returned known_for entries, check for country/language match.
-          // If known_for is empty (happens for older/less prominent artists on TMDB),
-          // still include them — the search query itself is specific enough.
-          if (kf.length === 0) return true;
-          return kf.some(f =>
-            (f.origin_country || []).includes(country) ||
-            (lang && f.original_language === lang)
-          );
-        })
-        .slice(0, 10);
-
-      const enriched = await Promise.all(
-        raw.map(async p => {
-          const detail = await getPersonDetail(p.id);
-          return {
-            tmdbId:     p.id,
-            name:       p.name,
-            filmCount:  (p.known_for || []).length,
-            knownFor:   (p.known_for || []).map(f => f.title || f.original_title).filter(Boolean),
-            genre:      null,
-            profilePic: p.profile_path
-                          ? `https://image.tmdb.org/t/p/w185${p.profile_path}`
-                          : null,
-            ...detail,
-          };
-        })
-      );
-
-      return res.status(200).json({ type, country, query: q, results: enriched });
-    }
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-};
-
-/**
- * Heuristic: map country code to primary TMDB original_language value.
- * Used as a fallback filter when origin_country is missing/empty in TMDB data.
- */
+// Heuristic: country code → primary TMDB original_language value
 function _langForCountry(code) {
   const MAP = {
     IT:'it', FR:'fr', DE:'de', ES:'es', JP:'ja', KR:'ko',
@@ -164,3 +90,152 @@ function _langForCountry(code) {
   };
   return MAP[code] || null;
 }
+
+function _matchesCountry(f, country, lang) {
+  return (f.origin_country || []).includes(country) ||
+         (lang && f.original_language === lang);
+}
+
+// ── Main handler ──────────────────────────────────────────────────────────────
+
+module.exports = async function handler(req, res) {
+  if (req.method === 'OPTIONS') { res.status(200).end(); return; }
+
+  const country = (req.query.country || 'IT').toUpperCase().slice(0, 2);
+  const q       = (req.query.q || '').trim();
+  const type    = req.query.type || 'films';
+
+  if (!q || q.length < 2) {
+    return res.status(400).json({ error: 'Query troppo corta (min 2 caratteri)' });
+  }
+
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+
+  const lang = _langForCountry(country);
+
+  try {
+
+    // ════════════════════════════════════════════════════════════
+    // FILMS
+    // ════════════════════════════════════════════════════════════
+    if (type === 'films') {
+
+      // ── Strategy A: title search (3 pages) ──────────────────
+      const titlePagesPromise = Promise.all([1, 2, 3].map(page =>
+        tmdb('/search/movie', { query: q, language: 'it-IT', page })
+          .then(d => d.results || [])
+          .catch(() => [])
+      ));
+
+      // ── Strategy B: person → filmography ────────────────────
+      // Search for a person matching the query; if found use their
+      // TMDB ID to discover every film from this country they
+      // directed (with_crew) or starred in (with_cast).
+      const personFilmsPromise = tmdb('/search/person', {
+        query:    q,
+        language: 'it-IT',
+        page:     1,
+      }).then(async personData => {
+        const persons = (personData.results || []).slice(0, 3); // top 3 matches
+        if (!persons.length) return [];
+
+        const filmLists = await Promise.all(persons.map(async p => {
+          const dept  = p.known_for_department || '';
+          const param = dept === 'Directing' ? 'with_crew' : 'with_cast';
+          try {
+            // Fetch up to 2 pages of their country-scoped filmography
+            const pages = await Promise.all([1, 2].map(page =>
+              tmdb('/discover/movie', {
+                with_origin_country: country,
+                [param]:             p.id,
+                sort_by:             'vote_count.desc',
+                language:            'it-IT',
+                page,
+              }).then(d => d.results || []).catch(() => [])
+            ));
+            return pages.flat();
+          } catch {
+            return [];
+          }
+        }));
+
+        return filmLists.flat();
+      }).catch(() => []);
+
+      // Run both strategies in parallel
+      const [titlePages, personFilms] = await Promise.all([
+        titlePagesPromise,
+        personFilmsPromise,
+      ]);
+
+      // Merge: title-search results filtered by country + person-filmography results
+      const titleMatches = titlePages.flat()
+        .filter(f => _matchesCountry(f, country, lang));
+
+      // Deduplicate by TMDB film ID, title matches first (more relevant)
+      const seen    = new Set();
+      const merged  = [];
+      for (const f of [...titleMatches, ...personFilms]) {
+        if (!seen.has(f.id)) { seen.add(f.id); merged.push(f); }
+        if (merged.length >= 15) break;
+      }
+
+      // Enrich with credits (director + actors)
+      const enriched = await Promise.all(merged.map(f => enrichFilm(f, country)));
+
+      return res.status(200).json({ type: 'films', country, query: q, results: enriched });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // DIRECTORS / ACTORS
+    // ════════════════════════════════════════════════════════════
+    const dept = type === 'directors' ? 'Directing' : 'Acting';
+
+    // Fetch 2 pages of person search results for broader coverage
+    const [page1, page2] = await Promise.all([
+      tmdb('/search/person', { query: q, language: 'it-IT', page: 1 })
+        .then(d => d.results || []).catch(() => []),
+      tmdb('/search/person', { query: q, language: 'it-IT', page: 2 })
+        .then(d => d.results || []).catch(() => []),
+    ]);
+
+    const raw = [...page1, ...page2]
+      .filter(p => {
+        if (p.known_for_department !== dept) return false;
+        const kf = p.known_for || [];
+        // Accept people with empty known_for (older/less-prominent on TMDB)
+        if (kf.length === 0) return true;
+        return kf.some(f =>
+          (f.origin_country || []).includes(country) ||
+          (lang && f.original_language === lang)
+        );
+      })
+      // Deduplicate by id
+      .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
+      .slice(0, 10);
+
+    const enriched = await Promise.all(
+      raw.map(async p => {
+        const detail = await getPersonDetail(p.id);
+        return {
+          tmdbId:     p.id,
+          name:       p.name,
+          filmCount:  (p.known_for || []).length,
+          knownFor:   (p.known_for || [])
+                        .map(f => f.title || f.original_title)
+                        .filter(Boolean),
+          genre:      null,
+          profilePic: p.profile_path
+                        ? `https://image.tmdb.org/t/p/w185${p.profile_path}`
+                        : null,
+          ...detail,
+        };
+      })
+    );
+
+    return res.status(200).json({ type, country, query: q, results: enriched });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};

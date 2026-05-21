@@ -1988,11 +1988,12 @@ async function _tmdbFallbackSearch(code, query){
       return;
     }
 
-    // Merge TMDB results into allItems (avoid duplicates by id)
-    const existingIds = new Set(st.allItems.map(x=>x.id||x.tmdbId));
-    const newItems = results.filter(r=>{
-      const rid = r.id || `tmdb_${r.tmdbId}`;
-      return !existingIds.has(rid) && !existingIds.has(r.tmdbId);
+    // Merge TMDB results into allItems (avoid duplicates by id/tmdbId)
+    const existingIds = new Set(st.allItems.flatMap(x=>[x.id, x.tmdbId ? `tmdb_${x.tmdbId}` : null].filter(Boolean)));
+    const newItems = results.filter(r => {
+      const id1 = r.id;
+      const id2 = r.tmdbId ? `tmdb_${r.tmdbId}` : null;
+      return !existingIds.has(id1) && !(id2 && existingIds.has(id2));
     });
     if(newItems.length) st.allItems.push(...newItems);
 
