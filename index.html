@@ -189,9 +189,10 @@
     .actor-years { font-family:var(--ff-display); font-size:1.28rem; color:var(--gold); margin-bottom:4px; }
     .card-links { display:flex; gap:12px; flex-wrap:wrap; margin-top:6px; }
     .card-source-link { display:inline-flex; align-items:center; gap:3px; color:var(--gold); opacity:0.55; font-size:0.72rem; font-family:var(--ff-mono); letter-spacing:0.06em; text-decoration:none; transition:opacity 0.18s; }
-    .card-source-link:hover, .card-trailer-link:hover { opacity:1; text-decoration:underline; }
+    .card-source-link:hover, .card-trailer-link:hover, .card-tmdb-link:hover { opacity:1; text-decoration:underline; }
     .card-source-link svg { width:10px; height:10px; flex-shrink:0; }
     .card-trailer-link { color:#ff4444; }
+    .card-tmdb-link { color:#01b4e4; }
 
     /* Genre color tags */
     .film-genre-tag { color:#ffcc00 !important; border-color:rgba(255,204,0,0.3) !important; background:rgba(255,204,0,0.08) !important; }
@@ -1493,6 +1494,14 @@ function _wikiLinkPerson(p){
   const q=encodeURIComponent(p.name);
   return `<a class="card-source-link" href="${p.url||`https://en.wikipedia.org/w/index.php?search=${q}&ns0=1`}" target="_blank" rel="noopener noreferrer">${_svgExtLink}Wikipedia</a>`;
 }
+function _tmdbLinkFilm(f){
+  if(!f.tmdbId) return '';
+  return `<a class="card-source-link card-tmdb-link" href="https://www.themoviedb.org/movie/${f.tmdbId}" target="_blank" rel="noopener noreferrer">${_svgExtLink}TMDB</a>`;
+}
+function _tmdbLinkPerson(p){
+  if(!p.tmdbId) return '';
+  return `<a class="card-source-link card-tmdb-link" href="https://www.themoviedb.org/person/${p.tmdbId}" target="_blank" rel="noopener noreferrer">${_svgExtLink}TMDB</a>`;
+}
 function _trailerLink(f){
   const q=encodeURIComponent(f.title+' '+(f.year||'')+' trailer');
   return `<a class="card-source-link card-trailer-link" href="${f.trailer||`https://www.youtube.com/results?search_query=${q}`}" target="_blank" rel="noopener noreferrer">${_svgPlay}Trailer</a>`;
@@ -1581,19 +1590,19 @@ function _renderCards(items, isFilms, isDirectors){
       const actors=(f.actors||[]).length?`<div class="film-actors-line">Con: ${f.actors.join(', ')}</div>`:'';
       const dir=f.director?`<span class="film-dir">Regia: ${f.director}</span>`:'';
       const rat=f.rating?` <span style="color:var(--gold);opacity:0.7;font-size:0.75rem">★ ${f.rating.toFixed(1)}</span>`:'';
-      h+=`<div class="film-card"><div class="film-year">${f.year||'—'}</div><div class="film-info"><div class="film-title">${f.title}${f.itTitle?` <span class="film-it-title">(${f.itTitle})</span>`:''}</div><div class="film-meta"><span class="film-genre-tag g-${f.genre||'Drammatico'}">${f.genre||'—'}</span>${dir}${rat}</div>${f.synopsis?`<div class="film-synopsis">${f.synopsis}</div>`:''}${actors}<div class="card-links">${_wikiLinkFilm(f)}${_trailerLink(f)}</div></div></div>`;
+      h+=`<div class="film-card"><div class="film-year">${f.year||'—'}</div><div class="film-info"><div class="film-title">${f.title}${f.itTitle?` <span class="film-it-title">(${f.itTitle})</span>`:''}</div><div class="film-meta"><span class="film-genre-tag g-${f.genre||'Drammatico'}">${f.genre||'—'}</span>${dir}${rat}</div>${f.synopsis?`<div class="film-synopsis">${f.synopsis}</div>`:''}${actors}<div class="card-links">${_wikiLinkFilm(f)}${_tmdbLinkFilm(f)}${_trailerLink(f)}</div></div></div>`;
     });
   } else if(isDirectors){
     items.forEach(d=>{
       const yrs=(d.born||'—')+(d.died?` — ${d.died}`:'');
       const kn=d.knownFor&&d.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${d.knownFor.slice(0,3).join(' · ')}</div>`:'';
-      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${d.name}</div><div class="actor-years">${yrs}</div>${d.bio?`<div class="actor-bio">${d.bio.slice(0,300)}${d.bio.length>300?'…':''}</div>`:''}${kn}${_wikiLinkPerson(d)}</div></div>`;
+      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${d.name}</div><div class="actor-years">${yrs}</div>${d.bio?`<div class="actor-bio">${d.bio.slice(0,300)}${d.bio.length>300?'…':''}</div>`:''}${kn}<div class="card-links">${_wikiLinkPerson(d)}${_tmdbLinkPerson(d)}</div></div></div>`;
     });
   } else {
     items.forEach(a=>{
       const yrs=(a.born||'—')+(a.died?` — ${a.died}`:'');
       const kn=a.knownFor&&a.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${a.knownFor.slice(0,3).join(' · ')}</div>`:'';
-      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${a.name}</div><div class="actor-years">${yrs}</div>${a.bio?`<div class="actor-bio">${a.bio.slice(0,300)}${a.bio.length>300?'…':''}</div>`:''}${kn}${_wikiLinkPerson(a)}</div></div>`;
+      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${a.name}</div><div class="actor-years">${yrs}</div>${a.bio?`<div class="actor-bio">${a.bio.slice(0,300)}${a.bio.length>300?'…':''}</div>`:''}${kn}<div class="card-links">${_wikiLinkPerson(a)}${_tmdbLinkPerson(a)}</div></div></div>`;
     });
   }
   return h;
