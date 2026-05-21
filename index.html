@@ -891,13 +891,11 @@ function getFilteredDirectors(code){
 function isDimmed(code){
   if(timeFrom<=modeDecadeMin() && timeTo>=TL_MAX) return false;
 
-  // When range stats are loaded, dim tiles whose count dropped to 0 in the range.
+  // When range stats are loaded, zero-count tiles are already excluded from the
+  // layout by buildMosaicLayout() — they are never drawn, so never dimmed.
+  // Non-zero tiles in the loaded range are always fully visible.
   const rangeKey=`${timeFrom}-${timeTo}`;
-  if(statsRangeCache[rangeKey]){
-    const s=COUNTRY_STATS[code]||{};
-    const count=viewMode==='films'?s.films:viewMode==='directors'?s.directors:s.actors;
-    return count===0;
-  }
+  if(statsRangeCache[rangeKey]) return false;
 
   // Fallback (range data not yet loaded): use cinema-start heuristic
   let start;
@@ -941,12 +939,29 @@ let liveMosaicLayout={};      // frame-by-frame layout with hover distortion
 function buildMosaicLayout(){
   const cW=canvas.width, cH=canvas.height;
 
+  // When a range filter is active AND the range stats have already been loaded
+  // (i.e. the async fetch completed), exclude countries with zero count so that
+  // the active countries expand to fill the freed space.
+  // During loading (pending fetch) all countries remain visible so there is no
+  // jarring pop when the handles are still moving.
+  const rangeKey=`${timeFrom}-${timeTo}`;
+  const rangeActive=timeFrom>modeDecadeMin()||timeTo<TL_MAX;
+  const rangeLoaded=rangeActive&&!!(statsRangeCache[rangeKey]);
+
+  // If the currently-open tooltip's country was excluded by the range, close it.
+  if(rangeLoaded && selectedCode && getCountryCount(selectedCode)===0){
+    closePinnedTooltip();
+  }
+
   // Assign countries to bands, sort N→S within each band.
   // Only include countries present in COUNTRY_STATS (dynamic API results) AND
   // defined in COUNTRIES (so we have geographic metadata for placement).
+  // When rangeLoaded, also exclude countries with zero count for the active range.
   const bands=MOSAIC_BANDS.map(b=>({
     ...b,
-    countries:Object.keys(COUNTRY_STATS).filter(c=>COUNTRIES[c]&&COUNTRIES[c].lon>=b.minLon&&COUNTRIES[c].lon<b.maxLon)
+    countries:Object.keys(COUNTRY_STATS)
+      .filter(c=>COUNTRIES[c]&&COUNTRIES[c].lon>=b.minLon&&COUNTRIES[c].lon<b.maxLon)
+      .filter(c=>!(rangeLoaded&&getCountryCount(c)===0))
       .sort((a,z)=>COUNTRIES[z].lat-COUNTRIES[a].lat)
   })).filter(b=>b.countries.length>0);
 
@@ -987,9 +1002,9 @@ function buildMosaicLayout(){
   mosaicLayout=layout;
 
   // Track which country has the most content (gets gold tile).
-  // Iterate only over countries present in COUNTRY_STATS to match what's rendered.
+  // Only consider countries that are actually in the layout (not excluded by range).
   let topN=0; maxCountCode=null;
-  Object.keys(COUNTRY_STATS).filter(c=>COUNTRIES[c]).forEach(code=>{
+  Object.keys(COUNTRY_STATS).filter(c=>COUNTRIES[c]&&!(rangeLoaded&&getCountryCount(c)===0)).forEach(code=>{
     const n=getCountryCount(code);
     if(n>topN){topN=n;maxCountCode=code;}
   });
