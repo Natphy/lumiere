@@ -195,6 +195,10 @@
     /* Genre color tags */
     .film-genre-tag { color:#ffcc00 !important; border-color:rgba(255,204,0,0.3) !important; background:rgba(255,204,0,0.08) !important; }
 
+    /* Person movement / typology tags */
+    .person-meta { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:4px; }
+    .person-cat-tag { font-family:var(--ff-mono); font-size:0.72rem; letter-spacing:0.08em; padding:2px 6px; border-radius:2px; text-transform:uppercase; border:1px solid; color:#00e5ff; border-color:rgba(0,229,255,0.28); background:rgba(0,229,255,0.06); }
+
     /* ── FLASH ── */
     .flash { position:fixed; bottom:76px; left:50%; transform:translateX(-50%) translateY(8px); background:rgba(7,9,15,0.97); border:1px solid var(--gold); border-left:3px solid var(--gold); color:var(--text); font-family:var(--ff-mono); font-size:0.68rem; padding:10px 18px; z-index:500; border-radius:4px; box-shadow:0 0 25px rgba(255,215,0,0.15); animation:flashIn 4s forwards; }
     @keyframes flashIn { 0%{opacity:0;transform:translateX(-50%) translateY(12px)} 12%{opacity:1;transform:translateX(-50%) translateY(0)} 75%{opacity:1} 100%{opacity:0;transform:translateX(-50%) translateY(-4px)} }
@@ -1508,39 +1512,51 @@ function _trailerLink(f){
 // ── Year key per item type ──
 function _yearOf(item, isFilms){ return isFilms ? (item.year||null) : (item.born||null); }
 
-// ── Derive movement era from director birth year (approximation) ──
-function _dirEra(person){
+// ── Derive movement era(s) from director birth year + genre ──
+// Returns an array so a director can belong to multiple movements
+// (e.g. a Horror director born in 1940 → ['Horror & Thriller', 'Nouvelle Vague']).
+function _dirEras(person){
   const born  = (typeof person === 'number') ? person : person?.born;
   const genre = (typeof person === 'object') ? person?.genre : null;
-  // Classificazione per genere dominante (più precisa dell'anno di nascita)
-  if(genre==='Documentario')                        return 'Documentario';
-  if(genre==='Animazione')                          return 'Animazione';
-  if(genre==='Horror'||genre==='Thriller'||genre==='Crimine'||genre==='Mistero') return 'Horror & Thriller';
-  // Classificazione per era (anno di nascita)
-  if(!born) return 'Contemporaneo'; // fallback: dati nascita assenti → era contemporanea
-  if(born<=1900) return 'Pionieri';
-  if(born<=1920) return 'Classico';
-  if(born<=1935) return 'Neorealismo';
-  if(born<=1950) return 'Nouvelle Vague';
-  if(born<=1963) return 'New Hollywood';
-  if(born<=1978) return "Cinema d'autore";
-  return 'Contemporaneo';
+  const tags  = [];
+  // Genre-based movement tags (added in addition to era, not instead)
+  if(genre==='Documentario')    tags.push('Documentario');
+  if(genre==='Animazione')      tags.push('Animazione');
+  if(genre==='Horror'||genre==='Thriller'||genre==='Crimine'||genre==='Mistero') tags.push('Horror & Thriller');
+  // Era-based movement tag (from birth year)
+  let era;
+  if(!born)          era = 'Contemporaneo';
+  else if(born<=1900) era = 'Pionieri';
+  else if(born<=1920) era = 'Classico';
+  else if(born<=1935) era = 'Neorealismo';
+  else if(born<=1950) era = 'Nouvelle Vague';
+  else if(born<=1963) era = 'New Hollywood';
+  else if(born<=1978) era = "Cinema d'autore";
+  else               era = 'Contemporaneo';
+  if(!tags.includes(era)) tags.push(era);
+  return tags;
 }
 
-// ── Derive actor type from birth year (approximation) ──
-function _actorType(person){
+// ── Derive actor typology/typologies from birth year + genre ──
+// Returns an array so an actor can have multiple typologies
+// (e.g. a Musical actress born in 1930 → ['Musical', 'Drammatico']).
+function _actorTypes(person){
   const born  = (typeof person === 'number') ? person : person?.born;
   const genre = (typeof person === 'object') ? person?.genre : null;
-  // Classificazione per genere dominante
-  if(genre==='Musical') return 'Musical';
-  // Classificazione per era
-  if(!born) return 'Antagonista'; // fallback: dati nascita assenti → tipologia contemporanea
-  if(born<=1905) return 'Cinema muto';
-  if(born<=1925) return 'Drammatico';
-  if(born<=1945) return 'Auteur';
-  if(born<=1958) return 'Commedia';
-  if(born<=1970) return 'Azione';
-  return 'Antagonista';
+  const tags  = [];
+  // Genre-based type tags
+  if(genre==='Musical') tags.push('Musical');
+  // Era-based type tag (from birth year)
+  let era;
+  if(!born)          era = 'Antagonista';
+  else if(born<=1905) era = 'Cinema muto';
+  else if(born<=1925) era = 'Drammatico';
+  else if(born<=1945) era = 'Auteur';
+  else if(born<=1958) era = 'Commedia';
+  else if(born<=1970) era = 'Azione';
+  else               era = 'Antagonista';
+  if(!tags.includes(era)) tags.push(era);
+  return tags;
 }
 
 // ── Apply sort + year + category filter to an items array ──
@@ -1552,8 +1568,8 @@ function _applyControls(items, isFilms, isDirectors, sortDir, decadeFilter, catF
   });
   if(catFilter!=null){
     if(isFilms)        out=out.filter(f=>(f.genres||[f.genre||'Drammatico']).includes(catFilter));
-    else if(isDirectors) out=out.filter(d=>_dirEra(d)===catFilter);
-    else                 out=out.filter(a=>_actorType(a)===catFilter);
+    else if(isDirectors) out=out.filter(d=>_dirEras(d).includes(catFilter));
+    else                 out=out.filter(a=>_actorTypes(a).includes(catFilter));
   }
   // Free-text search: matches title/name, director, actors, year, known-for titles
   if(searchQuery && searchQuery.trim()){
@@ -1595,13 +1611,15 @@ function _renderCards(items, isFilms, isDirectors){
     items.forEach(d=>{
       const yrs=(d.born||'—')+(d.died?` — ${d.died}`:'');
       const kn=d.knownFor&&d.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${d.knownFor.slice(0,3).join(' · ')}</div>`:'';
-      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${d.name}</div><div class="actor-years">${yrs}</div>${d.bio?`<div class="actor-bio">${d.bio.slice(0,300)}${d.bio.length>300?'…':''}</div>`:''}${kn}<div class="card-links">${_wikiLinkPerson(d)}${_tmdbLinkPerson(d)}</div></div></div>`;
+      const movTags=_dirEras(d).map(e=>`<span class="person-cat-tag">${e}</span>`).join(' ');
+      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${d.name}</div><div class="person-meta">${movTags}</div><div class="actor-years">${yrs}</div>${d.bio?`<div class="actor-bio">${d.bio.slice(0,300)}${d.bio.length>300?'…':''}</div>`:''}${kn}<div class="card-links">${_wikiLinkPerson(d)}${_tmdbLinkPerson(d)}</div></div></div>`;
     });
   } else {
     items.forEach(a=>{
       const yrs=(a.born||'—')+(a.died?` — ${a.died}`:'');
       const kn=a.knownFor&&a.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${a.knownFor.slice(0,3).join(' · ')}</div>`:'';
-      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${a.name}</div><div class="actor-years">${yrs}</div>${a.bio?`<div class="actor-bio">${a.bio.slice(0,300)}${a.bio.length>300?'…':''}</div>`:''}${kn}<div class="card-links">${_wikiLinkPerson(a)}${_tmdbLinkPerson(a)}</div></div></div>`;
+      const typTags=_actorTypes(a).map(t=>`<span class="person-cat-tag">${t}</span>`).join(' ');
+      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${a.name}</div><div class="person-meta">${typTags}</div><div class="actor-years">${yrs}</div>${a.bio?`<div class="actor-bio">${a.bio.slice(0,300)}${a.bio.length>300?'…':''}</div>`:''}${kn}<div class="card-links">${_wikiLinkPerson(a)}${_tmdbLinkPerson(a)}</div></div></div>`;
     });
   }
   return h;
@@ -1672,7 +1690,7 @@ function _buildCatChips(code, st, isFilms, isDirectors){
     cats = allCats; // always show all genres
   } else {
     const presentCats = new Set(
-      st.allItems.map(item => isDirectors ? _dirEra(item) : _actorType(item)).filter(Boolean)
+      st.allItems.flatMap(item => isDirectors ? _dirEras(item) : _actorTypes(item)).filter(Boolean)
     );
     cats = allCats.filter(c => presentCats.has(c));
     if(cats.length === 0) return '';
