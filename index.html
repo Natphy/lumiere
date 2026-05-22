@@ -1517,7 +1517,7 @@ function _dirEra(person){
   if(genre==='Animazione')                          return 'Animazione';
   if(genre==='Horror'||genre==='Thriller'||genre==='Crimine'||genre==='Mistero') return 'Horror & Thriller';
   // Classificazione per era (anno di nascita)
-  if(!born) return null;
+  if(!born) return 'Contemporaneo'; // fallback: dati nascita assenti → era contemporanea
   if(born<=1900) return 'Pionieri';
   if(born<=1920) return 'Classico';
   if(born<=1935) return 'Neorealismo';
@@ -1534,7 +1534,7 @@ function _actorType(person){
   // Classificazione per genere dominante
   if(genre==='Musical') return 'Musical';
   // Classificazione per era
-  if(!born) return null;
+  if(!born) return 'Antagonista'; // fallback: dati nascita assenti → tipologia contemporanea
   if(born<=1905) return 'Cinema muto';
   if(born<=1925) return 'Drammatico';
   if(born<=1945) return 'Auteur';
@@ -1551,7 +1551,7 @@ function _applyControls(items, isFilms, isDirectors, sortDir, decadeFilter, catF
     return y!=null && y>=decadeFilter && y<=decadeFilter+9;
   });
   if(catFilter!=null){
-    if(isFilms)        out=out.filter(f=>f.genre===catFilter);
+    if(isFilms)        out=out.filter(f=>(f.genres||[f.genre||'Drammatico']).includes(catFilter));
     else if(isDirectors) out=out.filter(d=>_dirEra(d)===catFilter);
     else                 out=out.filter(a=>_actorType(a)===catFilter);
   }
@@ -1563,7 +1563,7 @@ function _applyControls(items, isFilms, isDirectors, sortDir, decadeFilter, catF
         return (item.title||'').toLowerCase().includes(q)
           ||(item.itTitle||'').toLowerCase().includes(q)
           ||(item.director||'').toLowerCase().includes(q)
-          ||(item.genre||'').toLowerCase().includes(q)
+          ||(item.genres||[item.genre||'']).some(g=>g.toLowerCase().includes(q))
           ||String(item.year||'').includes(q)
           ||(item.actors||[]).some(a=>a.toLowerCase().includes(q));
       } else {
@@ -1588,7 +1588,8 @@ function _renderCards(items, isFilms, isDirectors){
       const actors=(f.actors||[]).length?`<div class="film-actors-line">Con: ${f.actors.join(', ')}</div>`:'';
       const dir=f.director?`<span class="film-dir">Regia: ${f.director}</span>`:'';
       const rat=f.rating?` <span style="color:var(--gold);opacity:0.7;font-size:0.75rem">★ ${f.rating.toFixed(1)}</span>`:'';
-      h+=`<div class="film-card"><div class="film-year">${f.year||'—'}</div><div class="film-info"><div class="film-title">${f.title}${f.itTitle?` <span class="film-it-title">(${f.itTitle})</span>`:''}</div><div class="film-meta"><span class="film-genre-tag g-${f.genre||'Drammatico'}">${f.genre||'—'}</span>${dir}${rat}</div>${f.synopsis?`<div class="film-synopsis">${f.synopsis}</div>`:''}${actors}<div class="card-links">${_wikiLinkFilm(f)}${_tmdbLinkFilm(f)}${_trailerLink(f)}</div></div></div>`;
+      const genreTags=(f.genres||[f.genre||'Drammatico']).map(g=>`<span class="film-genre-tag g-${g}">${g}</span>`).join(' ');
+      h+=`<div class="film-card"><div class="film-year">${f.year||'—'}</div><div class="film-info"><div class="film-title">${f.title}${f.itTitle?` <span class="film-it-title">(${f.itTitle})</span>`:''}</div><div class="film-meta">${genreTags}${dir}${rat}</div>${f.synopsis?`<div class="film-synopsis">${f.synopsis}</div>`:''}${actors}<div class="card-links">${_wikiLinkFilm(f)}${_tmdbLinkFilm(f)}${_trailerLink(f)}</div></div></div>`;
     });
   } else if(isDirectors){
     items.forEach(d=>{
@@ -1660,11 +1661,12 @@ function _buildCatChips(code, st, isFilms, isDirectors){
     label   = 'Tipologia';
   }
 
-  // Show only categories that appear in the loaded items (avoids empty chips)
+  // Show only categories that appear in the loaded items (avoids empty chips).
+  // For films use the full genres array so multi-genre films populate all their chips.
   const presentCats = new Set(
-    st.allItems.map(item =>
-      isFilms ? item.genre : isDirectors ? _dirEra(item) : _actorType(item)
-    ).filter(Boolean)
+    isFilms
+      ? st.allItems.flatMap(item => item.genres || (item.genre ? [item.genre] : []))
+      : st.allItems.map(item => isDirectors ? _dirEra(item) : _actorType(item)).filter(Boolean)
   );
   const cats = allCats.filter(c => presentCats.has(c));
   if(cats.length === 0) return ''; // no chips if no data

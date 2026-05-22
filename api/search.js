@@ -25,7 +25,7 @@
  *
  * CDN cache: 5 min (search results should stay reasonably fresh).
  */
-const { tmdb, mapGenre } = require('./_tmdb');
+const { tmdb, mapGenres } = require('./_tmdb');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,7 +68,8 @@ async function enrichFilm(f, country) {
     itTitle:  italianTitle !== originalTitle ? italianTitle : null,
     year:     f.release_date ? parseInt(f.release_date.slice(0, 4), 10) : null,
     country,
-    genre:    mapGenre(f.genre_ids),
+    genres:   mapGenres(f.genre_ids),
+    genre:    mapGenres(f.genre_ids)[0] || 'Drammatico',
     director: credits.director,
     actors:   credits.actors,
     synopsis: f.overview || '',

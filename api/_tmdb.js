@@ -56,13 +56,24 @@ const GENRE_MAP = {
 };
 
 /**
- * Map an array of TMDB genre_ids to our genre key (first match wins).
+ * Map an array of TMDB genre_ids to our primary genre label (first match wins).
+ * Kept for legacy callers; prefer mapGenres() for new code.
  */
 function mapGenre(genreIds = []) {
   for (const id of genreIds) {
     if (GENRE_MAP[id]) return GENRE_MAP[id];
   }
   return 'Drammatico';
+}
+
+/**
+ * Map an array of TMDB genre_ids to ALL matching genre labels.
+ * Returns every genre the film belongs to — no limit.
+ * Falls back to ['Drammatico'] when no id matches.
+ */
+function mapGenres(genreIds = []) {
+  const result = genreIds.map(id => GENRE_MAP[id]).filter(Boolean);
+  return result.length ? result : ['Drammatico'];
 }
 
 /**
@@ -74,4 +85,4 @@ const LUMIERE_COUNTRIES = [
   'IR','NO','HU','NZ','IE','TW','CZ','CA','PT','RO','HK'
 ];
 
-module.exports = { tmdb, GENRE_MAP, mapGenre, LUMIERE_COUNTRIES };
+module.exports = { tmdb, GENRE_MAP, mapGenre, mapGenres, LUMIERE_COUNTRIES };

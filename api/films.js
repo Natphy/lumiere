@@ -8,7 +8,7 @@
  * Returns an enriched list of films with director + cast from credits.
  * Cached 1 h at CDN level.
  */
-const { tmdb, mapGenre } = require('./_tmdb');
+const { tmdb, mapGenres } = require('./_tmdb');
 
 // Italian genre label → TMDB genre ID (for with_genres param)
 const GENRE_ID_MAP = {
@@ -136,7 +136,8 @@ module.exports = async function handler(req, res) {
           itTitle:  italianTitle !== originalTitle ? italianTitle : null,
           year:     f.release_date ? parseInt(f.release_date.slice(0, 4), 10) : null,
           country,
-          genre:    mapGenre(f.genre_ids),
+          genres:   mapGenres(f.genre_ids),
+          genre:    mapGenres(f.genre_ids)[0] || 'Drammatico', // primary (backward compat)
           director: credits.director,
           actors:   credits.actors,
           synopsis: f.overview || '',
