@@ -1661,15 +1661,22 @@ function _buildCatChips(code, st, isFilms, isDirectors){
     label   = 'Tipologia';
   }
 
-  // Show only categories that appear in the loaded items (avoids empty chips).
-  // For films use the full genres array so multi-genre films populate all their chips.
-  const presentCats = new Set(
-    isFilms
-      ? st.allItems.flatMap(item => item.genres || (item.genre ? [item.genre] : []))
-      : st.allItems.map(item => isDirectors ? _dirEra(item) : _actorType(item)).filter(Boolean)
-  );
-  const cats = allCats.filter(c => presentCats.has(c));
-  if(cats.length === 0) return ''; // no chips if no data
+  // Films: genre filter is server-side (TMDB with_genres), so always show
+  // ALL genre chips from GENRE_DEFS — TMDB may have animation/western/etc.
+  // films even if the first 20 loaded are not of that genre.
+  //
+  // Directors / actors: filter is client-side, so show only categories
+  // that actually appear in the loaded items (avoids empty chips).
+  let cats;
+  if(isFilms){
+    cats = allCats; // always show all genres
+  } else {
+    const presentCats = new Set(
+      st.allItems.map(item => isDirectors ? _dirEra(item) : _actorType(item)).filter(Boolean)
+    );
+    cats = allCats.filter(c => presentCats.has(c));
+    if(cats.length === 0) return '';
+  }
 
   // Active state: for films use tmdbGenre (TMDB-side filter), for people use catFilter
   const activeFilter = isFilms ? st.tmdbGenre : st.catFilter;
