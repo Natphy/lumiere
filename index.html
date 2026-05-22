@@ -384,8 +384,8 @@
 <!-- ── NATIONS MODAL ── -->
 <div class="overlay" id="nations-overlay" onclick="if(event.target===this)closeNations()">
   <div class="modal">
-    <div class="modal-header">
-      <div><div class="modal-title">STATI</div><div class="modal-subtitle">Nazioni presenti nel grafo cinematografico &nbsp;<span style="font-size:0.7em;opacity:0.55;letter-spacing:0.12em" title="Le barre usano scala logaritmica per rendere leggibili i paesi con pochi dati accanto ai grandi produttori">SCALA LOG</span></div></div>
+    <div class="modal-header" style="border-bottom:none">
+      <div><div class="modal-title">STATI</div><div class="modal-subtitle">Nazioni presenti nel grafo cinematografico</div><div style="font-family:var(--ff-mono);font-size:0.68rem;color:var(--text-dim);letter-spacing:0.13em;opacity:0.55;margin-top:4px" title="Le barre usano scala logaritmica per rendere leggibili i paesi con pochi dati accanto ai grandi produttori">GRAFICO A BARRE SU SCALA LOGARITMICA</div></div>
       <button class="modal-close" type="button" onclick="closeNations()">✕</button>
     </div>
     <div class="modal-body" id="country-list"></div>
