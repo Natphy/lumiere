@@ -49,7 +49,9 @@ module.exports = async function handler(req, res) {
 
   const country        = (req.query.country || 'FR').toUpperCase().slice(0, 2);
   const type           = req.query.type === 'actor' ? 'actor' : 'director';
-  const MAX_PEOPLE     = 50;   // total returned (all enriched with bio / birth year)
+  const page           = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const PER_PAGE       = 20;   // people per page (mirrors film pagination)
+  const MAX_PEOPLE     = 200;  // hard cap before pagination (from ~220 unique films' credits)
   const CAST_PER_FILM  = 10;   // top-billed actors considered per film
 
   // 1-hour CDN cache, 2-hour stale-while-revalidate
@@ -130,7 +132,7 @@ module.exports = async function handler(req, res) {
       });
     });
 
-    // Sort by film count desc, take top MAX_PEOPLE
+    // Sort by film count desc, cap at MAX_PEOPLE before pagination
     const sorted = Object.values(peopleMap)
       .map(p => {
         const gc    = p.genreCounts || {};
@@ -140,11 +142,15 @@ module.exports = async function handler(req, res) {
       .sort((a, b) => b.filmCount - a.filmCount)
       .slice(0, MAX_PEOPLE);
 
-    // ── Step 4: enrich ALL people with bio / birth year ─────────────────────
-    // Fetch in batches of 10 to avoid overwhelming the TMDB API.
+    // ── Step 4: paginate + enrich only this page's people ───────────────────
+    const totalPeople = sorted.length;
+    const totalPages  = Math.ceil(totalPeople / PER_PAGE) || 1;
+    const pageSlice   = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+    // Enrich in batches of 10 to avoid overwhelming the TMDB API
     const people = [];
-    for (let i = 0; i < sorted.length; i += 10) {
-      const batch = sorted.slice(i, i + 10);
+    for (let i = 0; i < pageSlice.length; i += 10) {
+      const batch = pageSlice.slice(i, i + 10);
       const enriched = await Promise.all(
         batch.map(async p => {
           const detail = await getPersonDetail(p.tmdbId);
@@ -154,7 +160,7 @@ module.exports = async function handler(req, res) {
       people.push(...enriched);
     }
 
-    res.status(200).json({ type, country, people });
+    res.status(200).json({ type, country, page, totalPeople, totalPages, perPage: PER_PAGE, people });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

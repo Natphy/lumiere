@@ -689,12 +689,12 @@ async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null, 
       totalResults = json.totalResults || data.length;
     } else {
       const type = viewMode === 'directors' ? 'director' : 'actor';
-      const res  = await fetch(`${API_BASE}/people?country=${code}&type=${type}`);
+      const res  = await fetch(`${API_BASE}/people?country=${code}&type=${type}&page=${page}`);
       if (!res.ok) throw new Error('people HTTP ' + res.status);
       const json = await res.json();
-      data         = json.people || [];
-      totalPages   = 1;
-      totalResults = data.length;
+      data         = json.people      || [];
+      totalPages   = json.totalPages  || 1;
+      totalResults = json.totalPeople || data.length;
     }
     const result = { data, totalPages, totalResults, sortDir };
     cacheSet(cacheKey, result);
@@ -712,13 +712,19 @@ function _storeCountryData(code, data, mode) {
     const seen = new Set(LOADED_FILMS.map(f => f.id));
     data.forEach(f => { if (!seen.has(f.id)) LOADED_FILMS.push(f); });
   } else if (mode === 'directors') {
-    COUNTRY_DIRECTORS[code] = data;
-    const seen = new Set(LOADED_DIRECTORS.map(p => p.tmdbId));
-    data.forEach(p => { if (!seen.has(p.tmdbId)) LOADED_DIRECTORS.push(p); });
+    // Append (not overwrite) so multiple pages accumulate in the local cache
+    if (!COUNTRY_DIRECTORS[code]) COUNTRY_DIRECTORS[code] = [];
+    const seenC = new Set(COUNTRY_DIRECTORS[code].map(p => p.tmdbId));
+    data.forEach(p => { if (!seenC.has(p.tmdbId)) COUNTRY_DIRECTORS[code].push(p); });
+    const seenL = new Set(LOADED_DIRECTORS.map(p => p.tmdbId));
+    data.forEach(p => { if (!seenL.has(p.tmdbId)) LOADED_DIRECTORS.push(p); });
   } else {
-    COUNTRY_ACTORS[code] = data;
-    const seen = new Set(LOADED_ACTORS.map(p => p.tmdbId));
-    data.forEach(p => { if (!seen.has(p.tmdbId)) LOADED_ACTORS.push(p); });
+    // Append (not overwrite) so multiple pages accumulate in the local cache
+    if (!COUNTRY_ACTORS[code]) COUNTRY_ACTORS[code] = [];
+    const seenC = new Set(COUNTRY_ACTORS[code].map(p => p.tmdbId));
+    data.forEach(p => { if (!seenC.has(p.tmdbId)) COUNTRY_ACTORS[code].push(p); });
+    const seenL = new Set(LOADED_ACTORS.map(p => p.tmdbId));
+    data.forEach(p => { if (!seenL.has(p.tmdbId)) LOADED_ACTORS.push(p); });
   }
 }
 
@@ -1731,8 +1737,8 @@ function _buildControls(code, st, isFilms, isDirectors){
 
 // ── Load-more button ──
 function _loadMoreBtn(code, st){
-  if(st.mode!=='films' || st.page>=st.totalPages) return '';
-  const remaining=(st.totalResults - st.allItems.length).toLocaleString('it-IT');
+  if(st.page >= st.totalPages) return '';
+  const remaining = (st.totalResults - st.allItems.length).toLocaleString('it-IT');
   return `<div id="tt-load-more" style="padding:4px 0 0">
     <button class="tt-ctrl-btn" style="width:100%;justify-content:center" onclick="loadMoreTooltip('${code}')">
       CARICA ALTRI 20 ▾ &nbsp;<span style="opacity:0.45">(${remaining} RIMANENTI)</span>
@@ -1827,15 +1833,15 @@ async function buildPinnedTooltip(code){
   const stKey=`${viewMode}_${code}`;
   _ttState[stKey]={ code, mode:viewMode, sortDir:'desc', decadeFilter:null, catFilter:null,
                     tmdbGenre:null, allItems:rangeItems, page:1, totalPages,
-                    totalResults: isFilms ? totalResults : rangeItems.length,
-                    validDecades, searchQuery:null };   // null for people; filtered array for films
+                    totalResults,   // for films: TMDB total; for people: server totalPeople
+                    validDecades, searchQuery:null };
   const st=_ttState[stKey];
 
   // Subtitle — mention range when active
   const rangeLabel = _rangeActive ? ` · ${timeFrom}–${timeTo}` : '';
   const sub=isFilms
     ? `Top ${rangeItems.length} su ${totalResults.toLocaleString('it-IT')} totali TMDB${rangeLabel} · ${c.continent.toUpperCase()}`
-    : `${rangeItems.length} ${modeLabel} nel periodo${rangeLabel} · ${c.continent.toUpperCase()}`;
+    : `${totalResults.toLocaleString('it-IT')} ${modeLabel}${rangeLabel} · ${c.continent.toUpperCase()}`;
 
   const visible=_applyControls(st.allItems, isFilms, isDirectors, st.sortDir, st.decadeFilter, st.catFilter, st.searchQuery);
 
@@ -2114,7 +2120,7 @@ function _highlight(text, q){
 // ── Load more (appends next page) ────────────────────────────
 async function loadMoreTooltip(code){
   const st=_ttState[`${viewMode}_${code}`];
-  if(!st||st.mode!=='films'||st.page>=st.totalPages) return;
+  if(!st||st.page>=st.totalPages) return;
 
   const btnWrap=document.getElementById('tt-load-more');
   if(btnWrap) btnWrap.innerHTML=`<div class="tt-loading" style="padding:8px 0;justify-content:center"><div class="tt-spinner"></div><span>Caricamento…</span></div>`;
