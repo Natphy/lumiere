@@ -49,8 +49,7 @@ module.exports = async function handler(req, res) {
 
   const country        = (req.query.country || 'FR').toUpperCase().slice(0, 2);
   const type           = req.query.type === 'actor' ? 'actor' : 'director';
-  const MAX_PEOPLE     = 50;   // total returned
-  const MAX_DETAIL     = 30;   // enriched with full bio / birth year
+  const MAX_PEOPLE     = 50;   // total returned (all enriched with bio / birth year)
   const CAST_PER_FILM  = 10;   // top-billed actors considered per film
 
   // 1-hour CDN cache, 2-hour stale-while-revalidate
@@ -141,21 +140,19 @@ module.exports = async function handler(req, res) {
       .sort((a, b) => b.filmCount - a.filmCount)
       .slice(0, MAX_PEOPLE);
 
-    // ── Step 4: enrich top MAX_DETAIL people with bio / birth year ───────────
-    const top  = sorted.slice(0, MAX_DETAIL);
-    const rest = sorted.slice(MAX_DETAIL);
-
-    const enriched = await Promise.all(
-      top.map(async p => {
-        const detail = await getPersonDetail(p.tmdbId);
-        return { ...p, ...detail };
-      })
-    );
-
-    const people = [
-      ...enriched,
-      ...rest.map(p => ({ ...p, born: null, died: null, bio: '', profilePic: null })),
-    ];
+    // ── Step 4: enrich ALL people with bio / birth year ─────────────────────
+    // Fetch in batches of 10 to avoid overwhelming the TMDB API.
+    const people = [];
+    for (let i = 0; i < sorted.length; i += 10) {
+      const batch = sorted.slice(i, i + 10);
+      const enriched = await Promise.all(
+        batch.map(async p => {
+          const detail = await getPersonDetail(p.tmdbId);
+          return { ...p, ...detail };
+        })
+      );
+      people.push(...enriched);
+    }
 
     res.status(200).json({ type, country, people });
   } catch (err) {
