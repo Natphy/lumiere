@@ -385,7 +385,7 @@
 <div class="overlay" id="nations-overlay" onclick="if(event.target===this)closeNations()">
   <div class="modal">
     <div class="modal-header">
-      <div><div class="modal-title">STATI</div><div class="modal-subtitle">Nazioni presenti nel grafo cinematografico</div></div>
+      <div><div class="modal-title">STATI</div><div class="modal-subtitle">Nazioni presenti nel grafo cinematografico &nbsp;<span style="font-size:0.7em;opacity:0.55;letter-spacing:0.12em" title="Le barre usano scala logaritmica per rendere leggibili i paesi con pochi dati accanto ai grandi produttori">SCALA LOG</span></div></div>
       <button class="modal-close" type="button" onclick="closeNations()">✕</button>
     </div>
     <div class="modal-body" id="country-list"></div>
@@ -2159,13 +2159,16 @@ function renderRightPanel(){
     return {code,c,count};
   }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
 
-  const maxC=sorted[0]?.count||1;
+  const maxC = sorted[0]?.count || 1;
+  // Logarithmic scale: compresses the huge US/India gap so every country
+  // shows a readable bar. log(1)=0 guard keeps single-entry countries at ~0.
+  const logMax = Math.log(maxC + 1);
 
   sorted.forEach(({code,c,count})=>{
     const item=document.createElement('div');
     item.className='legend-item';
     item.dataset.code=code;
-    const pct=Math.round(count/maxC*100);
+    const pct = Math.round(Math.log(count + 1) / logMax * 100);
     item.innerHTML=`<div class="legend-text">${c.name}</div><div class="legend-count">${count.toLocaleString('it-IT')}</div><div class="nation-bar"><div class="nation-fill" style="width:${pct}%"></div></div>`;
     item.style.flexWrap='wrap';
     item.onclick=()=>{ closeNations(); selectCountry(code); };
