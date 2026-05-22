@@ -19,7 +19,9 @@
  *              Used client-side by the timeline range bar to accurately dim tiles
  *              whose cinema hadn't started by the selected timeTo.
  */
-const { tmdb, GENRE_MAP } = require('./_tmdb');
+const { tmdb, GENRE_MAP, LUMIERE_COUNTRIES } = require('./_tmdb');
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /**
  * Fetch all ISO 3166-1 alpha-2 country codes that TMDB knows about.
@@ -32,8 +34,9 @@ async function getAllCountryCodes() {
 /**
  * Fetch total film count, genre sample, AND earliest film year for one country.
  * Two TMDB calls run in parallel — no extra wall time vs. the previous single call.
+ * On transient TMDB errors, retries once after 600 ms before giving up.
  */
-async function countryStats(code) {
+async function countryStats(code, attempt = 0) {
   try {
     const [data, earliest] = await Promise.all([
       // a) total count + genre sample (all films with at least 1 vote)
@@ -75,9 +78,14 @@ async function countryStats(code) {
       directors: Math.max(1, Math.round(films * 0.4)),
       actors:    Math.max(1, Math.round(films * 1.5)),
       genres,
-      filmStart,   // ← new: TMDB-accurate cinema start year
+      filmStart,
     };
   } catch {
+    // Retry once after a short back-off (handles transient TMDB rate-limits)
+    if (attempt === 0) {
+      await sleep(600);
+      return countryStats(code, 1);
+    }
     return { code, films: 0, directors: 0, actors: 0, genres: {}, filmStart: null };
   }
 }
@@ -100,12 +108,28 @@ module.exports = async function handler(req, res) {
       results.push(...batchResults);
     }
 
-    // Step 3: keep only countries with at least 20 films
-    const stats = {};
-    results.forEach(({ code, films, directors, actors, genres, filmStart }) => {
-      if (films >= 20) {
-        stats[code] = { films, directors, actors, genres, filmStart };
+    // Step 3: build initial stats map (threshold: ≥ 20 films)
+    const statsMap = new Map();
+    results.forEach(r => {
+      if (r.films >= 20) statsMap.set(r.code, r);
+    });
+
+    // Step 4: safety net — retry any Lumière country that came back as 0 films.
+    // These are major cinema nations; a 0 result is almost certainly a TMDB error.
+    const missingLumiere = LUMIERE_COUNTRIES.filter(c => !statsMap.has(c));
+    if (missingLumiere.length > 0) {
+      // Sequential retries with 400 ms gap to avoid hammering TMDB
+      for (const code of missingLumiere) {
+        await sleep(400);
+        const r = await countryStats(code, 0); // fresh attempt (retries internally)
+        if (r.films >= 20) statsMap.set(r.code, r);
       }
+    }
+
+    const stats = {};
+    statsMap.forEach((r, code) => {
+      stats[code] = { films: r.films, directors: r.directors, actors: r.actors,
+                      genres: r.genres, filmStart: r.filmStart };
     });
 
     res.status(200).json(stats);
