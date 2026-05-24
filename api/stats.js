@@ -72,16 +72,16 @@ async function countryStats(code, attempt = 0) {
       ? parseInt(firstResult.release_date.slice(0, 4), 10)
       : null;
 
-    // Stima del numero di registi e attori basata sul campionamento di people.js:
-    // people.js analizza fino a 220 film unici (5+3+3 pagine), poi aggrega i crediti.
-    // Con sovrapposizione tipica (~55% unici per registi, ~85% per attori)
-    // il risultato è capped a MAX_PEOPLE=200.
-    const sampleSize = Math.min(220, films);
+    // Stima registi/attori: scala logaritmica sul conteggio film.
+    // people.js campiona sempre max 220 film, ma la densità di persone uniche
+    // cresce con la varietà cinematografica del paese (proporzionale a log(films)).
+    // Capped a 200 (MAX_PEOPLE in people.js). Il client aggiorna il valore reale
+    // alla prima apertura del tooltip di un paese (client-side sync).
     return {
       code,
       films,
-      directors: Math.min(200, Math.max(1, Math.round(sampleSize * 0.55))),
-      actors:    Math.min(200, Math.max(1, Math.round(sampleSize * 0.85))),
+      directors: Math.min(200, Math.max(1, Math.round(Math.log10(films + 1) * 40))),
+      actors:    Math.min(200, Math.max(1, Math.round(Math.log10(films + 1) * 65))),
       genres,
       filmStart,
     };
