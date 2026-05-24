@@ -1784,13 +1784,24 @@ function _refreshCards(code){
   if(moreEl)  moreEl.outerHTML  = _loadMoreBtn(code, st);
   else if(cardsEl) cardsEl.insertAdjacentHTML('afterend', _loadMoreBtn(code, st));
 
-  // Refresh category chips active state
-  // Films: tmdbGenre (filtro TMDB). Registi/Attori: catFilter (filtro client-side).
-  const activeFilter = isFilms ? st.tmdbGenre : st.catFilter;
-  document.querySelectorAll('.tt-cat-chip[onclick*="filterTooltipCat"]').forEach(btn=>{
-    const cat=btn.textContent.trim();
-    btn.classList.toggle('active', cat==='Tutti' ? activeFilter===null : activeFilter===cat);
-  });
+  // Category chips:
+  // Films → always static (all genres shown), just refresh active state.
+  // Directors/Actors → rebuild the whole chip row each time allItems changes
+  //   (new pages may add eras/typologies not present in the first 20 loaded).
+  if(!isFilms){
+    const catAccEl = document.getElementById(`tt-acc-cat-${code}`);
+    if(catAccEl){
+      const rebuilt = _buildCatChips(code, st, false, isDirectors);
+      if(rebuilt) catAccEl.outerHTML = rebuilt;
+    }
+  } else {
+    // Films: only refresh the active state of existing chips
+    const activeFilter = st.tmdbGenre;
+    document.querySelectorAll('.tt-cat-chip[onclick*="filterTooltipCat"]').forEach(btn=>{
+      const cat=btn.textContent.trim();
+      btn.classList.toggle('active', cat==='Tutti' ? activeFilter===null : activeFilter===cat);
+    });
+  }
   // Refresh decade chips active state
   document.querySelectorAll('.tt-cat-chip[onclick*="filterTooltipDecade"]').forEach(btn=>{
     const d=parseInt(btn.textContent.trim(),10);
