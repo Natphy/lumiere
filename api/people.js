@@ -27,10 +27,11 @@ async function getPersonDetail(personId) {
       bio:        data.biography || '',
       profilePic: data.profile_path
                     ? `https://image.tmdb.org/t/p/w185${data.profile_path}`
-                    : null
+                    : null,
+      birthPlace: data.place_of_birth || null,
     };
   } catch {
-    return { born: null, died: null, bio: '', profilePic: null };
+    return { born: null, died: null, bio: '', profilePic: null, birthPlace: null };
   }
 }
 

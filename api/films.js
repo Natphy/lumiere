@@ -149,12 +149,15 @@ module.exports = async function handler(req, res) {
       })
     );
 
+    // Lumière quality filter: solo film con anno di uscita e almeno un regista accreditato
+    const qualified = enriched.filter(f => f.year !== null && f.director !== null);
+
     res.status(200).json({
       page:         discover.page,
       totalPages:   Math.min(discover.total_pages, 500), // TMDB caps deep pagination at 500
       totalResults: discover.total_results,
       sortDir,
-      films:        enriched,
+      films:        qualified,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

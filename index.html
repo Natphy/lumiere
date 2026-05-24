@@ -198,6 +198,7 @@
     /* Person movement / typology tags */
     .person-meta { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:4px; }
     .person-cat-tag { font-family:var(--ff-mono); font-size:0.72rem; letter-spacing:0.08em; padding:2px 6px; border-radius:2px; text-transform:uppercase; border:1px solid; color:#ffcc00; border-color:rgba(255,204,0,0.3); background:rgba(255,204,0,0.08); }
+    .person-nat { font-family:var(--ff-mono); font-size:0.72rem; color:var(--text-mid); letter-spacing:0.08em; margin-bottom:2px; }
 
     /* ── FLASH ── */
     .flash { position:fixed; bottom:76px; left:50%; transform:translateX(-50%) translateY(8px); background:rgba(7,9,15,0.97); border:1px solid var(--gold); border-left:3px solid var(--gold); color:var(--text); font-family:var(--ff-mono); font-size:0.68rem; padding:10px 18px; z-index:500; border-radius:4px; box-shadow:0 0 25px rgba(255,215,0,0.15); animation:flashIn 4s forwards; }
@@ -671,7 +672,7 @@ async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null, 
   const cacheKey = `${viewMode}_${code}_p${page}_${sortDir}${genre?'_g'+genre:''}${decade?'_d'+decade:''}${_rangeSuffix}`;
   const cached   = cacheGet(cacheKey);
   if (cached) {
-    _storeCountryData(code, cached.data, viewMode);
+    _storeCountryData(code, cached.data, viewMode, cached.totalResults);
     return cached;
   }
 
@@ -698,7 +699,7 @@ async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null, 
     }
     const result = { data, totalPages, totalResults, sortDir };
     cacheSet(cacheKey, result);
-    _storeCountryData(code, data, viewMode);
+    _storeCountryData(code, data, viewMode, totalResults);
     return result;
   } catch (err) {
     console.warn(`Lumière fetchCountryData ${viewMode}/${code} p${page} ${sortDir}:`, err);
@@ -706,7 +707,10 @@ async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null, 
   }
 }
 
-function _storeCountryData(code, data, mode) {
+// _storeCountryData: accumula dati nel cache locale e, per persone (pagina 1),
+// aggiorna COUNTRY_STATS con il conteggio reale dall'API per mantenere le
+// tessere degli stati allineate con il tooltip.
+function _storeCountryData(code, data, mode, totalFromAPI) {
   if (mode === 'films') {
     COUNTRY_FILMS[code] = data;
     const seen = new Set(LOADED_FILMS.map(f => f.id));
@@ -718,6 +722,15 @@ function _storeCountryData(code, data, mode) {
     data.forEach(p => { if (!seenC.has(p.tmdbId)) COUNTRY_DIRECTORS[code].push(p); });
     const seenL = new Set(LOADED_DIRECTORS.map(p => p.tmdbId));
     data.forEach(p => { if (!seenL.has(p.tmdbId)) LOADED_DIRECTORS.push(p); });
+    // Sync real count into COUNTRY_STATS (solo alla prima pagina caricata per paese)
+    if (totalFromAPI && COUNTRY_STATS[code] && !COUNTRY_STATS[code]._dirReal) {
+      COUNTRY_STATS[code].directors = totalFromAPI;
+      COUNTRY_STATS[code]._dirReal  = true;
+      const vals = Object.values(COUNTRY_STATS);
+      maxDirectorCount = Math.max(1, ...vals.map(v => v.directors || 0));
+      buildMosaicLayout();
+      updateStats();
+    }
   } else {
     // Append (not overwrite) so multiple pages accumulate in the local cache
     if (!COUNTRY_ACTORS[code]) COUNTRY_ACTORS[code] = [];
@@ -725,6 +738,15 @@ function _storeCountryData(code, data, mode) {
     data.forEach(p => { if (!seenC.has(p.tmdbId)) COUNTRY_ACTORS[code].push(p); });
     const seenL = new Set(LOADED_ACTORS.map(p => p.tmdbId));
     data.forEach(p => { if (!seenL.has(p.tmdbId)) LOADED_ACTORS.push(p); });
+    // Sync real count into COUNTRY_STATS (solo alla prima pagina caricata per paese)
+    if (totalFromAPI && COUNTRY_STATS[code] && !COUNTRY_STATS[code]._actReal) {
+      COUNTRY_STATS[code].actors   = totalFromAPI;
+      COUNTRY_STATS[code]._actReal = true;
+      const vals = Object.values(COUNTRY_STATS);
+      maxActorCount = Math.max(1, ...vals.map(v => v.actors || 0));
+      buildMosaicLayout();
+      updateStats();
+    }
   }
 }
 
@@ -1529,10 +1551,10 @@ function _dirEras(person){
   if(genre==='Documentario')    tags.push('Documentario');
   if(genre==='Animazione')      tags.push('Animazione');
   if(genre==='Horror'||genre==='Thriller'||genre==='Crimine'||genre==='Mistero') tags.push('Horror & Thriller');
-  // Era-based movement tag (from birth year)
+  // Era-based movement tag richiede anno di nascita noto
+  if(!born) return tags;
   let era;
-  if(!born)          era = 'Contemporaneo';
-  else if(born<=1900) era = 'Pionieri';
+  if(born<=1900) era = 'Pionieri';
   else if(born<=1920) era = 'Classico';
   else if(born<=1935) era = 'Neorealismo';
   else if(born<=1950) era = 'Nouvelle Vague';
@@ -1552,10 +1574,10 @@ function _actorTypes(person){
   const tags  = [];
   // Genre-based type tags
   if(genre==='Musical') tags.push('Musical');
-  // Era-based type tag (from birth year)
+  // Era-based type tag richiede anno di nascita noto
+  if(!born) return tags;
   let era;
-  if(!born)          era = 'Antagonista';
-  else if(born<=1905) era = 'Cinema muto';
+  if(born<=1905) era = 'Cinema muto';
   else if(born<=1925) era = 'Drammatico';
   else if(born<=1945) era = 'Auteur';
   else if(born<=1958) era = 'Commedia';
@@ -1618,14 +1640,16 @@ function _renderCards(items, isFilms, isDirectors){
       const yrs=(d.born||'—')+(d.died?` — ${d.died}`:'');
       const kn=d.knownFor&&d.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${d.knownFor.slice(0,3).join(' · ')}</div>`:'';
       const movTags=_dirEras(d).map(e=>`<span class="person-cat-tag">${e}</span>`).join(' ');
-      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${d.name}</div><div class="person-meta">${movTags}</div><div class="actor-years">${yrs}</div>${d.bio?`<div class="actor-bio">${d.bio.slice(0,300)}${d.bio.length>300?'…':''}</div>`:''}${kn}<div class="card-links">${_wikiLinkPerson(d)}${_tmdbLinkPerson(d)}</div></div></div>`;
+      const nat=d.birthPlace?`<div class="person-nat">${d.birthPlace}</div>`:'';
+      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${d.name}</div><div class="person-meta">${movTags}</div>${nat}<div class="actor-years">${yrs}</div>${d.bio?`<div class="actor-bio">${d.bio.slice(0,300)}${d.bio.length>300?'…':''}</div>`:''}${kn}<div class="card-links">${_wikiLinkPerson(d)}${_tmdbLinkPerson(d)}</div></div></div>`;
     });
   } else {
     items.forEach(a=>{
       const yrs=(a.born||'—')+(a.died?` — ${a.died}`:'');
       const kn=a.knownFor&&a.knownFor.length?`<div class="actor-bio" style="font-size:0.82rem;color:var(--text-dim)">Noto per: ${a.knownFor.slice(0,3).join(' · ')}</div>`:'';
       const typTags=_actorTypes(a).map(t=>`<span class="person-cat-tag">${t}</span>`).join(' ');
-      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${a.name}</div><div class="person-meta">${typTags}</div><div class="actor-years">${yrs}</div>${a.bio?`<div class="actor-bio">${a.bio.slice(0,300)}${a.bio.length>300?'…':''}</div>`:''}${kn}<div class="card-links">${_wikiLinkPerson(a)}${_tmdbLinkPerson(a)}</div></div></div>`;
+      const nat=a.birthPlace?`<div class="person-nat">${a.birthPlace}</div>`:'';
+      h+=`<div class="actor-card"><div class="actor-info"><div class="actor-name">${a.name}</div><div class="person-meta">${typTags}</div>${nat}<div class="actor-years">${yrs}</div>${a.bio?`<div class="actor-bio">${a.bio.slice(0,300)}${a.bio.length>300?'…':''}</div>`:''}${kn}<div class="card-links">${_wikiLinkPerson(a)}${_tmdbLinkPerson(a)}</div></div></div>`;
     });
   }
   return h;
@@ -1685,15 +1709,19 @@ function _buildCatChips(code, st, isFilms, isDirectors){
     label   = 'Tipologia';
   }
 
-  // Films: genre filter is server-side (TMDB with_genres), so always show
-  // ALL genre chips from GENRE_DEFS — TMDB may have animation/western/etc.
-  // films even if the first 20 loaded are not of that genre.
+  // Films: mostra solo i generi effettivamente presenti per questo paese.
+  // Fonti combinate: campione top-voted da COUNTRY_STATS (stats.js) + film già caricati.
+  // Questo evita chip che porterebbero a zero risultati per quel paese.
   //
   // Directors / actors: filter is client-side, so show only categories
   // that actually appear in the loaded items (avoids empty chips).
   let cats;
   if(isFilms){
-    cats = allCats; // always show all genres
+    const statsGenres = new Set(Object.keys((COUNTRY_STATS[code]||{}).genres||{}));
+    const loadedGenres = new Set(st.allItems.flatMap(f => f.genres || [f.genre||'Drammatico']));
+    const presentGenres = new Set([...statsGenres, ...loadedGenres]);
+    cats = presentGenres.size > 0 ? allCats.filter(c => presentGenres.has(c)) : allCats;
+    if(cats.length === 0) return '';
   } else {
     const presentCats = new Set(
       st.allItems.flatMap(item => isDirectors ? _dirEras(item) : _actorTypes(item)).filter(Boolean)

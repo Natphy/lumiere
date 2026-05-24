@@ -50,9 +50,10 @@ async function getPersonDetail(personId) {
       profilePic: data.profile_path
                     ? `https://image.tmdb.org/t/p/w185${data.profile_path}`
                     : null,
+      birthPlace: data.place_of_birth || null,
     };
   } catch {
-    return { born: null, died: null, bio: '', profilePic: null };
+    return { born: null, died: null, bio: '', profilePic: null, birthPlace: null };
   }
 }
 
