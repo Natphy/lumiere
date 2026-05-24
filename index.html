@@ -1709,19 +1709,16 @@ function _buildCatChips(code, st, isFilms, isDirectors){
     label   = 'Tipologia';
   }
 
-  // Films: mostra solo i generi effettivamente presenti per questo paese.
-  // Fonti combinate: campione top-voted da COUNTRY_STATS (stats.js) + film già caricati.
-  // Questo evita chip che porterebbero a zero risultati per quel paese.
+  // Films: sempre tutti i chip genere — il filtro genere è server-side (TMDB with_genres)
+  // quindi TMDB conosce tutti i generi disponibili per il paese, indipendentemente
+  // da quanti film sono stati caricati. Mostrare tutti i chip evita il problema
+  // del campione ridotto (top-20 voted non include quasi mai Animazione o Famiglia).
+  // Se un chip porta a zero risultati, lo stato vuoto è già gestito nell'UI.
   //
-  // Directors / actors: filter is client-side, so show only categories
-  // that actually appear in the loaded items (avoids empty chips).
+  // Directors / actors: filtro client-side → solo le categorie presenti negli item caricati.
   let cats;
   if(isFilms){
-    const statsGenres = new Set(Object.keys((COUNTRY_STATS[code]||{}).genres||{}));
-    const loadedGenres = new Set(st.allItems.flatMap(f => f.genres || [f.genre||'Drammatico']));
-    const presentGenres = new Set([...statsGenres, ...loadedGenres]);
-    cats = presentGenres.size > 0 ? allCats.filter(c => presentGenres.has(c)) : allCats;
-    if(cats.length === 0) return '';
+    cats = allCats;
   } else {
     const presentCats = new Set(
       st.allItems.flatMap(item => isDirectors ? _dirEras(item) : _actorTypes(item)).filter(Boolean)
