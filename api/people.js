@@ -84,10 +84,10 @@ module.exports = async function handler(req, res) {
     });
     const films = [...filmMap.values()];   // up to ~220 unique films
 
-    // ── Step 2: fetch credits for all films (batches of 10) ─────────────────
+    // ── Step 2: fetch credits for all films (batches of 20) ─────────────────
     const allCredits = [];
-    for (let i = 0; i < films.length; i += 10) {
-      const batch = films.slice(i, i + 10);
+    for (let i = 0; i < films.length; i += 20) {
+      const batch = films.slice(i, i + 20);
       const results = await Promise.all(
         batch.map(f =>
           tmdb(`/movie/${f.id}/credits`)

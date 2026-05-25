@@ -1,12 +1,12 @@
 /**
  * /api/stats
  *
- * Returns total film / director / actor counts per country for ALL countries
- * with meaningful cinema presence on TMDB (discovered dynamically).
+ * Returns total film / director / actor counts per country for the Lumière
+ * country list (LUMIERE_COUNTRIES — 31 entries).
  *
  * Flow:
- *   1. Call /configuration/countries to get all ~250 ISO country codes from TMDB.
- *   2. For each code (in parallel batches of 25) fire TWO parallel TMDB calls:
+ *   1. Use LUMIERE_COUNTRIES directly — no need to fetch all ~250 TMDB codes.
+ *   2. For each code (all in parallel) fire TWO parallel TMDB calls:
  *        a. Top-voted films → total count + genre sample
  *        b. Oldest film (date asc, vote_count ≥ 1) → filmStart year
  *      Both run in parallel so wall time is the same as before.
@@ -22,14 +22,6 @@
 const { tmdb, GENRE_MAP, LUMIERE_COUNTRIES } = require('./_tmdb');
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-/**
- * Fetch all ISO 3166-1 alpha-2 country codes that TMDB knows about.
- */
-async function getAllCountryCodes() {
-  const data = await tmdb('/configuration/countries', {});
-  return (data || []).map(c => c.iso_3166_1).filter(Boolean);
-}
 
 /**
  * Fetch total film count, genre sample, AND earliest film year for one country.
@@ -103,24 +95,17 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
 
   try {
-    // Step 1: discover all country codes from TMDB (~250)
-    const allCodes = await getAllCountryCodes();
+    // Step 1: fetch stats for all 31 Lumière countries in one parallel batch.
+    // No need to discover country codes — we know exactly which ones we need.
+    const results = await Promise.all(LUMIERE_COUNTRIES.map(countryStats));
 
-    // Step 2: batch in groups of 25 to stay within TMDB rate limits
-    const results = [];
-    for (let i = 0; i < allCodes.length; i += 25) {
-      const batch = allCodes.slice(i, i + 25);
-      const batchResults = await Promise.all(batch.map(countryStats));
-      results.push(...batchResults);
-    }
-
-    // Step 3: build initial stats map (threshold: ≥ 20 films)
+    // Step 2: build stats map (threshold: ≥ 20 films)
     const statsMap = new Map();
     results.forEach(r => {
       if (r.films >= 20) statsMap.set(r.code, r);
     });
 
-    // Step 4: safety net — retry any Lumière country that came back as 0 films.
+    // Step 3: safety net — retry any Lumière country that came back as 0 films.
     // These are major cinema nations; a 0 result is almost certainly a TMDB error.
     const missingLumiere = LUMIERE_COUNTRIES.filter(c => !statsMap.has(c));
     if (missingLumiere.length > 0) {

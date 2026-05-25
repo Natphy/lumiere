@@ -38,30 +38,40 @@ const SORT_MAP = {
   'asc' : 'primary_release_date.asc',
 };
 
-// Fetch director + top-5 actors for a film
-async function getCredits(filmId) {
+/**
+ * Fetch credits + trailer for a film in a SINGLE TMDB call via append_to_response.
+ * On page > 1 we skip videos (trailer) to keep the payload lean.
+ *
+ * append_to_response=credits,videos bundles the three endpoints into one request,
+ * halving (or better) the number of TMDB API calls compared to separate fetches.
+ */
+async function getFilmDetails(filmId, includeTrailer) {
   try {
-    const data = await tmdb(`/movie/${filmId}/credits`);
-    const director = (data.crew || []).find(p => p.job === 'Director')?.name || null;
-    const actors   = (data.cast || []).slice(0, 5).map(p => p.name);
-    return { director, actors };
-  } catch {
-    return { director: null, actors: [] };
-  }
-}
+    const append = includeTrailer ? 'credits,videos' : 'credits';
+    const data   = await tmdb(`/movie/${filmId}`, {
+      append_to_response: append,
+      language:           'it-IT',
+    });
 
-// Fetch YouTube trailer (official trailer → teaser → any)
-async function getTrailer(filmId) {
-  try {
-    const data    = await tmdb(`/movie/${filmId}/videos`, { language: 'it-IT' });
-    const results = data.results || [];
-    const pick =
-      results.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official) ||
-      results.find(v => v.site === 'YouTube' && v.type === 'Teaser'  && v.official) ||
-      results.find(v => v.site === 'YouTube');
-    return pick ? `https://www.youtube.com/watch?v=${pick.key}` : null;
+    // Credits
+    const credits  = data.credits || {};
+    const director = (credits.crew || []).find(p => p.job === 'Director')?.name || null;
+    const actors   = (credits.cast || []).slice(0, 5).map(p => p.name);
+
+    // Trailer (only when requested)
+    let trailer = null;
+    if (includeTrailer) {
+      const videos = (data.videos?.results || []);
+      const pick =
+        videos.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official) ||
+        videos.find(v => v.site === 'YouTube' && v.type === 'Teaser'  && v.official) ||
+        videos.find(v => v.site === 'YouTube');
+      trailer = pick ? `https://www.youtube.com/watch?v=${pick.key}` : null;
+    }
+
+    return { director, actors, trailer };
   } catch {
-    return null;
+    return { director: null, actors: [], trailer: null };
   }
 }
 
@@ -118,13 +128,11 @@ module.exports = async function handler(req, res) {
 
     const raw = discover.results || [];
 
-    // Enrich each film with credits (always) and trailer (page 1 only)
+    // Enrich each film — ONE TMDB call per film via append_to_response=credits[,videos]
     const enriched = await Promise.all(
       raw.map(async f => {
-        const [credits, trailer] = await Promise.all([
-          getCredits(f.id),
-          page === 1 ? getTrailer(f.id) : Promise.resolve(null),
-        ]);
+        const includeTrailer = (page === 1);
+        const details = await getFilmDetails(f.id, includeTrailer);
 
         const originalTitle = f.original_title || f.title;
         const italianTitle  = f.title;
@@ -138,10 +146,10 @@ module.exports = async function handler(req, res) {
           country,
           genres:   mapGenres(f.genre_ids),
           genre:    mapGenres(f.genre_ids)[0] || 'Drammatico', // primary (backward compat)
-          director: credits.director,
-          actors:   credits.actors,
+          director: details.director,
+          actors:   details.actors,
           synopsis: f.overview || '',
-          trailer,
+          trailer:  details.trailer,
           poster:   f.poster_path ? `https://image.tmdb.org/t/p/w300${f.poster_path}` : null,
           rating:   f.vote_average,
           votes:    f.vote_count,
