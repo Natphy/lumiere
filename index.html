@@ -544,18 +544,26 @@ const API_BASE = 'https://lumiere-vert.vercel.app/api';
 const CACHE_TTL_STATS = 24 * 60 * 60 * 1000;  // 24 h  (stats)
 const CACHE_TTL_DATA  =  1 * 60 * 60 * 1000;  //  1 h  (films / people)
 
+// Bump STATS_VER whenever the stats schema or formula changes so that stale
+// localStorage entries (with old counts) are automatically discarded.
+const STATS_VER = '3';  // v3: power-law formula, no 200 cap
+
 function cacheGet(key) {
   try {
-    const raw = localStorage.getItem('lum_' + key);
+    const storageKey = key === 'stats' ? `lum_stats_v${STATS_VER}` : 'lum_' + key;
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
     const ttl = key.startsWith('stats') ? CACHE_TTL_STATS : CACHE_TTL_DATA;
-    if (Date.now() - ts > ttl) { localStorage.removeItem('lum_' + key); return null; }
+    if (Date.now() - ts > ttl) { localStorage.removeItem(storageKey); return null; }
     return data;
   } catch { return null; }
 }
 function cacheSet(key, data) {
-  try { localStorage.setItem('lum_' + key, JSON.stringify({ ts: Date.now(), data })); } catch {}
+  try {
+    const storageKey = key === 'stats' ? `lum_stats_v${STATS_VER}` : 'lum_' + key;
+    localStorage.setItem(storageKey, JSON.stringify({ ts: Date.now(), data }));
+  } catch {}
 }
 function cacheClear() {
   Object.keys(localStorage).filter(k=>k.startsWith('lum_')).forEach(k=>localStorage.removeItem(k));
