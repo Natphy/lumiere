@@ -573,6 +573,70 @@ function cacheClear() {
   Object.keys(localStorage).filter(k=>k.startsWith('lum_')).forEach(k=>localStorage.removeItem(k));
 }
 
+// ── In-flight prefetch promises ──────────────────────────
+// Map: cacheKey → Promise<result|null>  (entry removed when settled)
+// Allows fetchCountryData to await an already-started request
+// instead of opening a duplicate connection.
+const _prefetchInFlight = new Map();
+
+// Build the fetch URL for a given viewMode/params (shared by prefetch helpers).
+function _buildDataURL(code, page, sortDir, genre, decade) {
+  const _rangeActive = timeFrom > modeDecadeMin() || timeTo < TL_MAX;
+  const rangeParam   = _rangeActive ? `&dateFrom=${timeFrom}&dateTo=${timeTo}` : '';
+  if (viewMode === 'films') {
+    const genreParam  = genre  ? `&genre=${encodeURIComponent(genre)}`   : '';
+    const decadeParam = decade ? `&decade=${decade}`                      : '';
+    return `${API_BASE}/films?country=${code}&page=${page}&sort=${sortDir}${genreParam}${decadeParam}${rangeParam}`;
+  } else {
+    const type = viewMode === 'directors' ? 'director' : 'actor';
+    return `${API_BASE}/people?country=${code}&type=${type}&page=${page}`;
+  }
+}
+
+// Parse a raw JSON response into the normalized { data, totalPages, totalResults, sortDir } shape.
+function _parseDataResponse(json, sortDir) {
+  if (viewMode === 'films') {
+    return { data: json.films || [], totalPages: json.totalPages || 1, totalResults: json.totalResults || 0, sortDir };
+  } else {
+    return { data: json.people || [], totalPages: json.totalPages || 1, totalResults: json.totalPeople || 0, sortDir };
+  }
+}
+
+// Silently pre-fetch and cache a page of data.
+// cacheKey must match the one used by fetchCountryData.
+function _prefetchURL(cacheKey, url, sortDir) {
+  if (cacheGet(cacheKey) || _prefetchInFlight.has(cacheKey)) return;
+  const p = fetch(url)
+    .then(r => r.ok ? r.json() : null)
+    .then(json => {
+      if (!json) return null;
+      const result = _parseDataResponse(json, sortDir);
+      cacheSet(cacheKey, result);
+      return result;
+    })
+    .catch(() => null)
+    .finally(() => _prefetchInFlight.delete(cacheKey));
+  _prefetchInFlight.set(cacheKey, p);
+}
+
+// Hover prefetch — page 1, default sort, no filters.
+// Exploits the 200–500 ms hover→click window to hide latency.
+function _prefetchCountry(code) {
+  if (!code || !COUNTRY_STATS[code] || isDimmed(code)) return;
+  const _rangeActive = timeFrom > modeDecadeMin() || timeTo < TL_MAX;
+  const _rangeSuffix = _rangeActive ? `_r${timeFrom}_${timeTo}` : '';
+  const cacheKey = `${viewMode}_${code}_p1_desc${_rangeSuffix}`;
+  _prefetchURL(cacheKey, _buildDataURL(code, 1, 'desc', null, null), 'desc');
+}
+
+// Background page prefetch — called after rendering a page to make "Carica altri" instant.
+function _prefetchNextPage(code, nextPage, sortDir, genre, decade) {
+  const _rangeActive = timeFrom > modeDecadeMin() || timeTo < TL_MAX;
+  const _rangeSuffix = _rangeActive ? `_r${timeFrom}_${timeTo}` : '';
+  const cacheKey = `${viewMode}_${code}_p${nextPage}_${sortDir}${genre?'_g'+genre:''}${decade?'_d'+decade:''}${_rangeSuffix}`;
+  _prefetchURL(cacheKey, _buildDataURL(code, nextPage, sortDir, genre, decade), sortDir);
+}
+
 // ── Runtime counters ────────────────────────────────────
 // COUNTRY_STATS — populated at startup from /api/stats
 // Shape: { XX: { films: N, directors: N, actors: N }, … }
@@ -686,6 +750,16 @@ async function fetchCountryData(code, page = 1, sortDir = 'desc', genre = null, 
   if (cached) {
     _storeCountryData(code, cached.data, viewMode, cached.totalResults);
     return cached;
+  }
+
+  // If a prefetch is already in-flight for this exact key, await it —
+  // avoids opening a duplicate connection for the same resource.
+  if (_prefetchInFlight.has(cacheKey)) {
+    const result = await _prefetchInFlight.get(cacheKey);
+    if (result) {
+      _storeCountryData(code, result.data, viewMode, result.totalResults);
+      return result;
+    }
   }
 
   try {
@@ -1425,6 +1499,8 @@ canvas.addEventListener('mousemove',e=>{
   const hit=getNodeAt(mx,my);
   if(hit!==hoveredCode){
     hoveredCode=hit;
+    // Hover prefetch: start fetching page 1 while the user aims to click
+    if(hit && !isDimmed(hit)) _prefetchCountry(hit);
     canvas.style.cursor=(hit&&!isDimmed(hit))?'pointer':'default';
   }
   document.querySelectorAll('.legend-item[data-code]').forEach(el=>{
@@ -1906,6 +1982,9 @@ async function buildPinnedTooltip(code){
     : _renderCards(visible, isFilms, isDirectors);
   html+=`</div>${_loadMoreBtn(code,st)}</div>`;
   ttEl.innerHTML=html;
+
+  // Background prefetch page 2 so "Carica altri" is instant
+  if(totalPages > 1) setTimeout(()=>_prefetchNextPage(code, 2, 'desc', st.tmdbGenre||null, st.decadeFilter||null), 400);
 }
 
 // ── Public: toggle sort direction ────────────────────────────
@@ -2182,6 +2261,8 @@ async function loadMoreTooltip(code){
   st.page++;
   st.allItems.push(...newItems);
   _refreshCards(code);   // re-applies sort+filter and rebuilds load-more btn
+  // Background prefetch next page so the following "Carica altri" is instant
+  if(st.page < st.totalPages) setTimeout(()=>_prefetchNextPage(code, st.page+1, st.sortDir, st.tmdbGenre||null, st.decadeFilter||null), 300);
 }
 
 function closePinnedTooltip(){

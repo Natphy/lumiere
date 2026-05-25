@@ -55,8 +55,9 @@ module.exports = async function handler(req, res) {
   const MAX_PEOPLE     = 1000;  // soft cap — large countries easily surface 500+ people
   const CAST_PER_FILM  = 10;    // top-billed actors considered per film
 
-  // 1-hour CDN cache, 2-hour stale-while-revalidate
-  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
+  // 6-hour CDN cache, 12-hour stale-while-revalidate
+  // People data (bios, filmographies) changes far less often than new film releases.
+  res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=43200');
 
   try {
     // ── Step 1: collect films ────────────────────────────────────────────────
