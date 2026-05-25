@@ -1,9 +1,8 @@
 {
   "version": 2,
   "functions": {
-    "api/stats.js": {
-      "maxDuration": 60
-    }
+    "api/stats.js":  { "maxDuration": 60 },
+    "api/people.js": { "maxDuration": 60 }
   },
   "headers": [
     {

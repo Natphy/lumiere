@@ -51,29 +51,30 @@ module.exports = async function handler(req, res) {
   const country        = (req.query.country || 'FR').toUpperCase().slice(0, 2);
   const type           = req.query.type === 'actor' ? 'actor' : 'director';
   const page           = Math.max(1, parseInt(req.query.page, 10) || 1);
-  const PER_PAGE       = 20;   // people per page (mirrors film pagination)
-  const MAX_PEOPLE     = 200;  // hard cap before pagination (from ~220 unique films' credits)
-  const CAST_PER_FILM  = 10;   // top-billed actors considered per film
+  const PER_PAGE       = 20;    // people per page (mirrors film pagination)
+  const MAX_PEOPLE     = 1000;  // soft cap — large countries easily surface 500+ people
+  const CAST_PER_FILM  = 10;    // top-billed actors considered per film
 
   // 1-hour CDN cache, 2-hour stale-while-revalidate
   res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
 
   try {
     // ── Step 1: collect films ────────────────────────────────────────────────
-    // Pass A — most voted  (popular films, crowd favourites, blockbusters)
-    // Pass B — highest rated with a minimum of 50 votes (arthouse, classics, auteur cinema)
-    // Pass C — most recent (contemporary talent)
+    // Pass A — most voted  (10 pages ≈ 200 films: popular, blockbusters, crowd favourites)
+    // Pass B — highest rated with ≥50 votes (5 pages ≈ 100 films: arthouse, classics)
+    // Pass C — most recent (5 pages ≈ 100 films: contemporary talent)
+    // Total unique: up to ~400 films → surfaces 300–600 unique people for large countries
     const [passA, passB, passC] = await Promise.all([
-      Promise.all([1,2,3,4,5].map(p => discoverPage(country, 'vote_count.desc',           p))),
-      Promise.all([1,2,3].map(p =>
+      Promise.all([1,2,3,4,5,6,7,8,9,10].map(p => discoverPage(country, 'vote_count.desc', p))),
+      Promise.all([1,2,3,4,5].map(p =>
         tmdb('/discover/movie', {
           with_origin_country: country,
           sort_by:             'vote_average.desc',
-          'vote_count.gte':    50,          // meaningful average, not 1-vote flukes
+          'vote_count.gte':    50,
           page:                p,
         }).then(d => d.results || []).catch(() => [])
       )),
-      Promise.all([1,2,3].map(p => discoverPage(country, 'primary_release_date.desc', p))),
+      Promise.all([1,2,3,4,5].map(p => discoverPage(country, 'primary_release_date.desc', p))),
     ]);
 
     // Deduplicate by TMDB film ID

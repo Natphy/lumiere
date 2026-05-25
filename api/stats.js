@@ -72,16 +72,17 @@ async function countryStats(code, attempt = 0) {
       ? parseInt(firstResult.release_date.slice(0, 4), 10)
       : null;
 
-    // Stima registi/attori: scala logaritmica sul conteggio film.
-    // people.js campiona sempre max 220 film, ma la densità di persone uniche
-    // cresce con la varietà cinematografica del paese (proporzionale a log(films)).
-    // Capped a 200 (MAX_PEOPLE in people.js). Il client aggiorna il valore reale
-    // alla prima apertura del tooltip di un paese (client-side sync).
+    // Director/actor estimates using a power-law formula — no artificial cap.
+    // Calibrated against people.js output (which samples ~400 films per country):
+    //   films^0.4 × 3   for directors  →  US≈290  IT≈200  KR≈135  small(100)≈19
+    //   films^0.4 × 7.5 for actors     →  US≈720  IT≈500  KR≈335  small(100)≈47
+    // The client replaces these with the exact navigable count on first tooltip open.
+    const pow = Math.pow(films, 0.4);
     return {
       code,
       films,
-      directors: Math.min(200, Math.max(1, Math.round(Math.log10(films + 1) * 40))),
-      actors:    Math.min(200, Math.max(1, Math.round(Math.log10(films + 1) * 65))),
+      directors: Math.max(1, Math.round(pow * 3)),
+      actors:    Math.max(1, Math.round(pow * 7.5)),
       genres,
       filmStart,
     };
