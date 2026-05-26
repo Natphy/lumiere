@@ -550,7 +550,7 @@ const CACHE_TTL_DATA  =  1 * 60 * 60 * 1000;  //  1 h  (films / people)
 
 // Bump STATS_VER whenever the stats schema or formula changes so that stale
 // localStorage entries (with old counts) are automatically discarded.
-const STATS_VER = '3';  // v3: power-law formula, no 200 cap
+const STATS_VER = '4';  // v4: added Africa (EG, ZA, NG, MA)
 
 function cacheGet(key) {
   try {

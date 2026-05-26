@@ -82,7 +82,9 @@ function mapGenres(genreIds = []) {
 const LUMIERE_COUNTRIES = [
   'FR','US','IT','GB','DE','JP','SE','RU','IN','KR',
   'ES','PL','DK','AT','BR','MX','CN','AR','AU','BE',
-  'IR','NO','HU','NZ','IE','TW','CZ','CA','PT','RO','HK'
+  'IR','NO','HU','NZ','IE','TW','CZ','CA','PT','RO','HK',
+  // Africa
+  'EG','ZA','NG','MA'
 ];
 
 module.exports = { tmdb, GENRE_MAP, mapGenre, mapGenres, LUMIERE_COUNTRIES };
