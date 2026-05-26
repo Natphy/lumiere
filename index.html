@@ -270,6 +270,11 @@
     /* ── TOOLTIP LOADING STATE ── */
     .tt-loading { display:flex; align-items:center; gap:12px; padding:24px 0; color:var(--text-dim); font-family:var(--ff-mono); font-size:0.88rem; letter-spacing:0.08em; }
     .tt-spinner { width:18px; height:18px; border:2px solid rgba(255,215,0,0.2); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
+    /* Curiosità mostrata sotto lo spinner — appare solo se il caricamento dura > 350 ms */
+    .tt-fact { font-family:var(--ff-title); font-size:1.13rem; color:var(--text-dim); font-style:italic; line-height:1.55; padding:0 0 8px; opacity:0; animation:factFadeIn 0.7s ease 0.35s forwards; }
+    @keyframes factFadeIn { to { opacity:1; } }
+    /* Curiosità Lumière mostrata sotto lo spinner principale del grafo */
+    #lumiere-tip { position:fixed; top:116px; left:50%; transform:translateX(-50%); width:min(480px,90vw); text-align:center; font-family:var(--ff-title); font-size:1.05rem; color:rgba(255,215,0,0.5); font-style:italic; line-height:1.55; pointer-events:none; z-index:499; opacity:0; animation:factFadeIn 0.7s ease 1s forwards; }
 
     /* ── TIMELINE RANGE BAR ── */
     #timeline-bar { position:fixed; bottom:34px; left:0; right:0; height:24px; z-index:1050; user-select:none; touch-action:none; }
@@ -573,6 +578,39 @@ function cacheClear() {
   Object.keys(localStorage).filter(k=>k.startsWith('lum_')).forEach(k=>localStorage.removeItem(k));
 }
 
+// ── Loading facts ────────────────────────────────────────
+// Mostrate sotto lo spinner durante il caricamento (tooltip e grafo).
+// Appaiono solo se il caricamento dura abbastanza — grazie al delay CSS di 350 ms.
+const LOADING_FACTS = {
+  lumiere: [
+    "Lumière prende il nome dai fratelli che proiettarono il primo film della storia a Parigi, nel dicembre 1895.",
+    "Il mosaico ridimensiona le tessere in tempo reale: ogni dato viene interrogato direttamente da TMDB.",
+    "La barra temporale permette di esplorare come la produzione cinematografica mondiale si è evoluta decade per decade.",
+    "Lumière copre 35 grandi cinematografie mondiali, dall'Egitto alla Nuova Zelanda, dall'India al Brasile.",
+    "Quando è attivo un filtro temporale, le nazioni senza film nel periodo scompaiono e le restanti si ridistribuiscono automaticamente.",
+  ],
+  films: [
+    "TMDB raccoglie informazioni su oltre 700.000 film da tutto il mondo, aggiornate ogni giorno dalla comunità.",
+    "Sono inclusi solo i film con data di uscita e almeno un regista accreditato su TMDB.",
+    "Il trailer mostrato in ogni scheda è il video ufficiale più recente disponibile su YouTube.",
+  ],
+  directors: [
+    "I registi sono ordinati per numero di film realizzati nel paese, campionando fino a 400 titoli tra i più votati, meglio valutati e più recenti.",
+    "Il movimento — dai Pionieri al Contemporaneo — è assegnato in base all'anno di nascita e ai generi prevalenti nella filmografia.",
+    "Lumière include registi di ogni era: dai padri fondatori del cinema muto agli autori che lavorano oggi.",
+  ],
+  actors: [
+    "Gli attori sono selezionati tra i primi dieci per billing nei film del paese, per garantire i nomi più rappresentativi.",
+    "La tipologia — da Cinema muto ad Azione — combina l'anno di nascita con i generi dei film interpretati.",
+    "Tra gli attori puoi trovare star del cinema commerciale, muse del cinema d'autore e pionieri del cinema muto.",
+  ],
+};
+
+function _randomFact(mode) {
+  const pool = LOADING_FACTS[mode] || LOADING_FACTS.lumiere;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // ── In-flight prefetch promises ──────────────────────────
 // Map: cacheKey → Promise<result|null>  (entry removed when settled)
 // Allows fetchCountryData to await an already-started request
@@ -663,6 +701,19 @@ let LOADED_ACTORS    = [];
 function showSpinner(on) {
   const el = document.getElementById('api-spinner');
   if (el) el.style.display = on ? 'flex' : 'none';
+  // Lumière tip: appare sotto lo spinner dopo 1 s (via CSS animation-delay)
+  let tip = document.getElementById('lumiere-tip');
+  if (on) {
+    if (!tip) { tip = document.createElement('div'); tip.id = 'lumiere-tip'; document.body.appendChild(tip); }
+    tip.textContent = _randomFact('lumiere');
+    // Forza restart dell'animazione di fade-in ad ogni apertura
+    tip.style.animation = 'none';
+    tip.offsetHeight; // reflow
+    tip.style.animation = '';
+    tip.style.display = 'block';
+  } else if (tip) {
+    tip.style.display = 'none';
+  }
 }
 
 // ── Stats fetch — called once at startup ─────────────────
@@ -1911,7 +1962,7 @@ async function buildPinnedTooltip(code){
   const loadingSub = isFilms
     ? `${totalFmt} ${modeLabel} su TMDB · ${c.continent.toUpperCase()}`
     : `~${totalFmt} ${modeLabel} · ${c.continent.toUpperCase()}`;
-  ttEl.innerHTML=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${loadingSub}</div></div><button class="modal-close" type="button" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body"><div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento dati TMDB…</span></div></div>`;
+  ttEl.innerHTML=`<div class="tt-header"><div class="tt-header-info"><div class="tt-title">${c.name}</div><div class="tt-subtitle">${loadingSub}</div></div><button class="modal-close" type="button" onclick="closePinnedTooltip()">✕</button></div><div class="tt-body"><div class="tt-loading"><div class="tt-spinner"></div><span>Caricamento dati TMDB…</span></div><div class="tt-fact">${_randomFact(viewMode)}</div></div>`;
   ttEl.className='pinned';
   setTimeout(()=>ttEl.classList.add('tt-vis'),10);
   ttOv.classList.add('active');
