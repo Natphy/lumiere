@@ -174,6 +174,7 @@
     .film-title { margin-bottom:4px; }
     .actor-name { margin-bottom:2px; }
     .film-it-title { font-weight:400; font-size:1.1rem; color:var(--text-dim); }
+    .film-alt-sep  { opacity:0.4; margin:0 3px; }
     .gm-it-title { font-size:0.9em; color:var(--text-dim); font-weight:400; }
     .film-meta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; align-items:center; }
     .film-genre-tag { font-family:var(--ff-mono); font-size:0.75rem; letter-spacing:0.08em; padding:2px 6px; border-radius:2px; text-transform:uppercase; border:1px solid; }
@@ -424,7 +425,7 @@
   <div id="footer-sync" class="footer-status">
     <span class="status-dot"></span><span id="footer-sync-text">SINCRONIZZAZIONE…</span>
   </div>
-  <div id="last-update">DATI TMDB · LUMIÈRE v2.9 · © <span id="footer-year">2026</span> Christian Steiner</div>
+  <div id="last-update">DATI TMDB · LUMIÈRE v3.0 · © <span id="footer-year">2026</span> Christian Steiner</div>
 </footer>
 
 <div id="zoom-hint">SCORRI O PIZZICA PER NAVIGARE · DOPPIO CLICK PER RESET</div>
@@ -3085,6 +3086,7 @@ function _applyControls(items, isFilms, isDirectors, sortDir, decadeFilter, catF
       if(isFilms){
         return (item.title||'').toLowerCase().includes(q)
           ||(item.itTitle||'').toLowerCase().includes(q)
+          ||(item.enTitle||'').toLowerCase().includes(q)
           ||(item.director||'').toLowerCase().includes(q)
           ||(item.genres||[item.genre||'']).some(g=>g.toLowerCase().includes(q))
           ||String(item.year||'').includes(q)
@@ -3112,7 +3114,9 @@ function _renderCards(items, isFilms, isDirectors){
       const dir=f.director?`<span class="film-dir">Regia: ${f.director}</span>`:'';
       const rat=f.rating?` <span style="color:var(--gold);opacity:0.7;font-size:0.75rem">★ ${f.rating.toFixed(1)}</span>`:'';
       const genreTags=(f.genres||[f.genre||'Drammatico']).map(g=>`<span class="film-genre-tag g-${g}">${g}</span>`).join(' ');
-      h+=`<div class="film-card"><div class="film-year">${f.year||'—'}</div><div class="film-info"><div class="film-title">${f.title}${f.itTitle?` <span class="film-it-title">(${f.itTitle})</span>`:''}</div><div class="film-meta">${genreTags}${dir}${rat}</div>${f.synopsis?`<div class="film-synopsis">${f.synopsis}</div>`:''}${actors}<div class="card-links">${_wikiLinkFilm(f)}${_tmdbLinkFilm(f)}${_trailerLink(f)}</div></div></div>`;
+      const altParts=[f.itTitle,f.enTitle].filter(Boolean);
+      const altBlock=altParts.length?` <span class="film-it-title">(${altParts.join('<span class="film-alt-sep">·</span>')})</span>`:'';
+      h+=`<div class="film-card"><div class="film-year">${f.year||'—'}</div><div class="film-info"><div class="film-title">${f.title}${altBlock}</div><div class="film-meta">${genreTags}${dir}${rat}</div>${f.synopsis?`<div class="film-synopsis">${f.synopsis}</div>`:''}${actors}<div class="card-links">${_wikiLinkFilm(f)}${_tmdbLinkFilm(f)}${_trailerLink(f)}</div></div></div>`;
     });
   } else if(isDirectors){
     items.forEach(d=>{
@@ -3598,13 +3602,16 @@ function _buildSuggestions(code, query, items, isFilms, isDirectors){
     if(isFilms){
       const title    = item.title    || '';
       const itTitle  = item.itTitle  || '';
+      const enTitle  = item.enTitle  || '';
       const director = item.director || '';
-      const label = title.toLowerCase().includes(q) ? title
-                  : itTitle.toLowerCase().includes(q) ? itTitle
+      const label = title.toLowerCase().includes(q)    ? title
+                  : itTitle.toLowerCase().includes(q)  ? itTitle
+                  : enTitle.toLowerCase().includes(q)  ? enTitle
                   : director.toLowerCase().includes(q) ? director
                   : null;
-      const meta  = title.toLowerCase().includes(q) ? String(item.year||'')
-                  : itTitle.toLowerCase().includes(q) ? String(item.year||'')
+      const meta  = title.toLowerCase().includes(q)    ? String(item.year||'')
+                  : itTitle.toLowerCase().includes(q)  ? String(item.year||'')
+                  : enTitle.toLowerCase().includes(q)  ? String(item.year||'')
                   : director.toLowerCase().includes(q) ? 'Regista'
                   : null;
       if(label && !seen.has(label)){

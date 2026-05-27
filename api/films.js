@@ -39,16 +39,19 @@ const SORT_MAP = {
 };
 
 /**
- * Fetch credits + trailer for a film in a SINGLE TMDB call via append_to_response.
- * On page > 1 we skip videos (trailer) to keep the payload lean.
+ * Fetch credits, trailer, translations for a film in a SINGLE TMDB call via
+ * append_to_response. Translations give us:
+ *   - English title (for non-English-original films)
+ *   - English overview as fallback when Italian overview is empty
  *
- * append_to_response=credits,videos bundles the three endpoints into one request,
- * halving (or better) the number of TMDB API calls compared to separate fetches.
+ * On page > 1 we skip videos (trailer) to keep the payload lean.
  */
 async function getFilmDetails(filmId, includeTrailer) {
   try {
-    const append = includeTrailer ? 'credits,videos' : 'credits';
-    const data   = await tmdb(`/movie/${filmId}`, {
+    const append = includeTrailer
+      ? 'credits,videos,translations'
+      : 'credits,translations';
+    const data = await tmdb(`/movie/${filmId}`, {
       append_to_response: append,
       language:           'it-IT',
     });
@@ -69,9 +72,20 @@ async function getFilmDetails(filmId, includeTrailer) {
       trailer = pick ? `https://www.youtube.com/watch?v=${pick.key}` : null;
     }
 
-    return { director, actors, trailer };
+    // Translations — extract English (US preferred) for title + overview fallback
+    const allTrans = data.translations?.translations || [];
+    const enTrans  = allTrans.find(t => t.iso_639_1 === 'en' && t.iso_3166_1 === 'US')
+                  || allTrans.find(t => t.iso_639_1 === 'en');
+
+    // Overview: data.overview is Italian (language=it-IT); fall back to English
+    const overview = data.overview || enTrans?.data?.overview || '';
+
+    // English title for display alongside the original
+    const enTitle  = enTrans?.data?.title || null;
+
+    return { director, actors, trailer, overview, enTitle };
   } catch {
-    return { director: null, actors: [], trailer: null };
+    return { director: null, actors: [], trailer: null, overview: '', enTitle: null };
   }
 }
 
@@ -135,20 +149,27 @@ module.exports = async function handler(req, res) {
         const details = await getFilmDetails(f.id, includeTrailer);
 
         const originalTitle = f.original_title || f.title;
-        const italianTitle  = f.title;
+        // f.title is the Italian title (language=it-IT); show it only when it differs
+        const italianTitle  = f.title !== originalTitle ? f.title : null;
+        // English title from translations; omit if identical to original or Italian
+        const enTitle       = details.enTitle &&
+                              details.enTitle !== originalTitle &&
+                              details.enTitle !== f.title
+                              ? details.enTitle : null;
 
         return {
           id:       `tmdb_${f.id}`,
           tmdbId:   f.id,
           title:    originalTitle,
-          itTitle:  italianTitle !== originalTitle ? italianTitle : null,
+          itTitle:  italianTitle,
+          enTitle,                                        // ← English title (new)
           year:     f.release_date ? parseInt(f.release_date.slice(0, 4), 10) : null,
           country,
           genres:   mapGenres(f.genre_ids),
-          genre:    mapGenres(f.genre_ids)[0] || 'Drammatico', // primary (backward compat)
+          genre:    mapGenres(f.genre_ids)[0] || 'Drammatico',
           director: details.director,
           actors:   details.actors,
-          synopsis: f.overview || '',
+          synopsis: details.overview,                    // ← richer + IT/EN fallback
           trailer:  details.trailer,
           poster:   f.poster_path ? `https://image.tmdb.org/t/p/w300${f.poster_path}` : null,
           rating:   f.vote_average,
