@@ -146,9 +146,7 @@
     .nation-fill { background:linear-gradient(90deg,#7b5600,#ffcc00); }
 
     /* ── FOOTER ── */
-    footer { position:fixed; bottom:0; left:0; right:0; height:34px; background:transparent; padding:0 20px; display:flex; justify-content:space-between; align-items:center; font-family:var(--ff-mono); font-size:0.58rem; color:var(--gold); opacity:0.65; text-shadow:0 0 8px rgba(0,0,0,0.9); z-index:1100; }
-    .status-dot { width:5px; height:5px; border-radius:50%; background:var(--gold); display:inline-block; margin-right:6px; animation:blink 2.2s ease-in-out infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    footer { position:fixed; bottom:0; left:0; right:0; height:34px; background:transparent; padding:0 20px; display:flex; justify-content:center; align-items:center; font-family:var(--ff-mono); font-size:0.58rem; color:var(--gold); opacity:0.65; text-shadow:0 0 8px rgba(0,0,0,0.9); z-index:1100; }
 
 
     /* ── TOOLTIP OVERLAY & PINNED ── */
@@ -213,8 +211,8 @@
 
     /* ── RESPONSIVE ── */
     @media(max-width:1099px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .mode-num{display:none} .hdr-btn{height:1.9rem;font-size:0.74rem;padding:0 12px;letter-spacing:0.12em} .canvas-wrapper{top:52px} footer{font-size:0.65rem} #tooltip{width:300px} .tt-title{font-size:1.95rem} .tt-subtitle{font-size:0.70rem} .film-year{font-size:1.43rem} .film-title{font-size:1.24rem} .film-genre-tag{font-size:0.65rem} .film-dir{font-size:0.70rem} .film-synopsis{font-size:1.07rem} .film-actors-line{font-size:0.68rem} .actor-name{font-size:1.24rem} .actor-years{font-size:1.11rem} .actor-bio{font-size:1.07rem} .actor-films-line{font-size:0.68rem} .panel-title{font-size:0.75rem} .legend-text{font-size:0.99rem} .legend-count{font-size:0.81rem} .cc-name{font-size:1.17rem} .cc-meta{font-size:0.70rem} .modal-title{font-size:2rem} .modal-subtitle{font-size:0.75rem} .modal-close{font-size:0.845rem} .app-desc-text{font-size:1.3rem} .guide-label{font-size:1.17rem} .guide-desc{font-size:1.17rem}.sources-cat-title{font-size:0.75rem} .source-name{font-size:1.17rem} .source-url{font-size:0.73rem} .source-desc{font-size:1.105rem} }
-    @media(max-width:767px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .left-panel{top:62px;bottom:38px;width:268px} footer{height:28px;font-size:0.66rem;padding:0 12px} .footer-status{display:none} .canvas-wrapper{top:52px;bottom:46px} #tooltip{width:min(300px,90vw)} }
-    @media(max-width:479px) { header{height:46px;padding:6px 8px;align-items:center} .logo h1{font-size:1.35rem} .mode-num{display:none} .left-panel{width:min(290px,90vw);top:56px;bottom:38px} .hdr-btn{height:1.35rem;padding:0 8px;font-size:0.70rem;letter-spacing:0.08em} footer{height:28px;padding:0 10px} .footer-status{display:none} .canvas-wrapper{top:46px;bottom:46px} #tooltip{width:min(290px,92vw)} }
+    @media(max-width:767px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .left-panel{top:62px;bottom:38px;width:268px} footer{height:28px;font-size:0.66rem;padding:0 12px} .canvas-wrapper{top:52px;bottom:46px} #tooltip{width:min(300px,90vw)} }
+    @media(max-width:479px) { header{height:46px;padding:6px 8px;align-items:center} .logo h1{font-size:1.35rem} .mode-num{display:none} .left-panel{width:min(290px,90vw);top:56px;bottom:38px} .hdr-btn{height:1.35rem;padding:0 8px;font-size:0.70rem;letter-spacing:0.08em} footer{height:28px;padding:0 10px} .canvas-wrapper{top:46px;bottom:46px} #tooltip{width:min(290px,92vw)} }
 
     /* ── SCROLLBAR ── */
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:var(--surface)} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px} ::-webkit-scrollbar-thumb:hover{background:rgba(255,215,0,0.35)}
@@ -420,9 +418,7 @@
 
 <!-- ── FOOTER ── -->
 <footer>
-  <div class="footer-status"><span class="status-dot"></span>DATABASE ATTIVO — SINCRONIZZAZIONE AUTOMATICA OGNI 24H</div>
-  <div id="last-update">CARICAMENTO IN CORSO...</div>
-  <div>LUMIÈRE v2.8 · <span>© <span id="footer-year">2026</span> Christian Steiner</span></div>
+  <div id="last-update">DATI TMDB · LUMIÈRE v2.9 · © <span id="footer-year">2026</span> Christian Steiner</div>
 </footer>
 
 <div id="zoom-hint">SCORRI O PIZZICA PER NAVIGARE · DOPPIO CLICK PER RESET</div>
@@ -541,6 +537,8 @@ const COUNTRIES = {
   'AU': { name:'Australia',        flag:'🇦🇺', continent:'oceania',  lon:133,  lat:-27,  rgb:'0,187,170' },
   'NZ': { name:'Nuova Zelanda',    flag:'🇳🇿', continent:'oceania',  lon:172,  lat:-41,  rgb:'0,187,170' }
 };
+// Array fisso dei codici paese — evita Object.keys(COUNTRIES) nei path caldi
+const COUNTRY_CODES = Object.keys(COUNTRIES);
 
 
 // ═══════════════════════════════════════════════════════
@@ -2067,7 +2065,7 @@ async function initStats(forceRefresh = false) {
       _applyStats();
     } else {
       // First load with no prior data: placeholder so mosaic can at least render
-      Object.keys(COUNTRIES).forEach(c => {
+      COUNTRY_CODES.forEach(c => {
         if (!COUNTRY_STATS[c]) COUNTRY_STATS[c] = { films: 10, directors: 4, actors: 30 };
       });
       _applyStats();
@@ -2236,6 +2234,8 @@ function codeHash(code){
   for(const ch of code) h=(h*31+ch.charCodeAt(0))&0xffff;
   return h/0xffff;
 }
+// Pre-computed hash map — avoids re-running codeHash() per tile per frame
+const _codeHashMap = new Map(COUNTRY_CODES.map(c=>[c,codeHash(c)]));
 
 // ═══════════════════════════════════════════════════════
 // STATE
@@ -2293,6 +2293,8 @@ const INACTIVITY_DELAY  = 2000;  // ms di inattività prima di riattivare l'auto
 // ═══════════════════════════════════════════════════════
 const canvas = document.getElementById('lumiere-canvas');
 const ctx    = canvas.getContext('2d');
+// Feature-detect letterSpacing once — avoids per-tile per-frame property check
+const _hasLetterSpacing = ctx.letterSpacing !== undefined;
 const GEO_LON_MIN=-130, GEO_LON_MAX=175, GEO_LAT_MAX=72, GEO_LAT_MIN=-50, GEO_PAD=0.05;
 
 function geoToNorm(lon,lat){
@@ -2635,7 +2637,7 @@ function drawTile(code){
     ctx.fillStyle=grd;
   } else {
     // Sepia-gray with unique luminosity per country code (deterministic)
-    const L=Math.round(14+codeHash(code)*26); // 14%–40%
+    const L=Math.round(14+(_codeHashMap.get(code)||0)*26); // 14%–40%
     const grd=ctx.createLinearGradient(x,y,x,y+h);
     grd.addColorStop(0,`hsl(30,10%,${L+4}%)`);
     grd.addColorStop(1,`hsl(30,10%,${L-3}%)`);
@@ -2669,8 +2671,8 @@ function drawTile(code){
     // Letter-spacing only for small fonts (large fonts need every pixel for characters)
     const letterSp=nSz<11&&w>30?Math.round(nSz*0.18):0;
     ctx.font=`${nSz}px 'Share Tech Mono',monospace`;
-    if(ctx.letterSpacing!==undefined) ctx.letterSpacing=letterSp+'px';
-    const hasLS=(ctx.letterSpacing!==undefined);
+    if(_hasLetterSpacing) ctx.letterSpacing=letterSp+'px';
+    const hasLS=_hasLetterSpacing;
     const approxW=str=>ctx.measureText(str).width+(hasLS?0:str.length*letterSp);
 
     // For very narrow tiles use the ISO code (2 chars always fit);
@@ -2707,7 +2709,7 @@ function drawTile(code){
 
     // Draw count
     if(showCount){
-      if(ctx.letterSpacing!==undefined) ctx.letterSpacing='0px';
+      if(_hasLetterSpacing) ctx.letterSpacing='0px';
       const cText=String(count);
       ctx.font=`${cSz}px 'Bebas Neue',sans-serif`;
       // Auto-fit: scale cSz down if the number overflows maxLineW (same logic as name)
@@ -2758,7 +2760,7 @@ function draw(){
   const activeCode = autoMode ? autoCode : hoveredCode;
 
   // Update per-tile hover lerps (height animation)
-  Object.keys(COUNTRIES).forEach(code=>{
+  COUNTRY_CODES.forEach(code=>{
     if(!nodeHoverT[code]) nodeHoverT[code]=0;
     const target=code===activeCode?1:0;
     nodeHoverT[code]+=(target-nodeHoverT[code])*0.055;
@@ -2766,17 +2768,21 @@ function draw(){
 
   // Update per-column hover lerps (width animation — slower for smooth column transitions)
   const _hbx=(activeCode&&mosaicLayout[activeCode])?mosaicLayout[activeCode].x:-1;
-  Object.keys(mosaicLayout).forEach(code=>{
-    const bx=mosaicLayout[code].x;
+  COUNTRY_CODES.forEach(code=>{
+    const bx=mosaicLayout[code]?.x;
+    if(bx===undefined) return;
     if(bandHoverT[bx]===undefined) bandHoverT[bx]=0;
     const target=bx===_hbx?1:0;
     bandHoverT[bx]+=(target-bandHoverT[bx])*0.012;
   });
 
   // Compute live layout with hover distortion, then draw
+  // Two-pass render: dimmed tiles first (behind), active tiles on top
   computeLiveLayout();
-  Object.keys(COUNTRIES).forEach(code=>{if(isDimmed(code)) drawTile(code);});
-  Object.keys(COUNTRIES).forEach(code=>{if(!isDimmed(code)) drawTile(code);});
+  const _dimmedTiles=[], _activeTiles=[];
+  COUNTRY_CODES.forEach(code=>{ isDimmed(code)?_dimmedTiles.push(code):_activeTiles.push(code); });
+  _dimmedTiles.forEach(drawTile);
+  _activeTiles.forEach(drawTile);
 
   drawVignette(w,h);
 }
@@ -2788,7 +2794,7 @@ function getNodeAt(sx,sy){
   // Use live layout (includes hover distortion) for accurate hit testing
   const layout=Object.keys(liveMosaicLayout).length?liveMosaicLayout:mosaicLayout;
   let found=null;
-  Object.keys(COUNTRIES).forEach(code=>{
+  COUNTRY_CODES.forEach(code=>{
     const t=layout[code];
     if(!t) return;
     if(sx>=t.x&&sx<=t.x+t.w&&sy>=t.y&&sy<=t.y+t.h) found=code;
@@ -2824,7 +2830,7 @@ function resetView(){
 // ═══════════════════════════════════════════════════════
 // ── Modalità auto-animazione ──────────────────────────────
 function startAutoMode(){
-  const codes=Object.keys(COUNTRIES);
+  const codes=COUNTRY_CODES;
   // Scegli una tessera random (diversa da quella corrente)
   function pickNext(){
     const eligible=codes.filter(c=>c!==autoCode);
@@ -4039,7 +4045,6 @@ requestAnimationFrame(async ()=>{
   // Initial render with empty stats (mosaic shows equal-size tiles until stats arrive)
   resize(); // sets canvas size + buildMosaicLayout()
   document.getElementById('footer-year').textContent=new Date().getFullYear();
-  document.getElementById('last-update').textContent='DATI TMDB · AGGIORNAMENTO AUTOMATICO';
   renderRightPanel();
   updateStats();
   initTimeline();
