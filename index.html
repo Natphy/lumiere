@@ -146,7 +146,10 @@
     .nation-fill { background:linear-gradient(90deg,#7b5600,#ffcc00); }
 
     /* ── FOOTER ── */
-    footer { position:fixed; bottom:0; left:0; right:0; height:34px; background:transparent; padding:0 20px; display:flex; justify-content:center; align-items:center; font-family:var(--ff-mono); font-size:0.58rem; color:var(--gold); opacity:0.65; text-shadow:0 0 8px rgba(0,0,0,0.9); z-index:1100; }
+    footer { position:fixed; bottom:0; left:0; right:0; height:34px; background:transparent; padding:0 20px; display:flex; justify-content:space-between; align-items:center; font-family:var(--ff-mono); font-size:0.58rem; color:var(--gold); opacity:0.65; text-shadow:0 0 8px rgba(0,0,0,0.9); z-index:1100; }
+    .status-dot { width:5px; height:5px; border-radius:50%; background:var(--gold); display:inline-block; margin-right:6px; flex-shrink:0; animation:blink 2.2s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    .footer-status { display:flex; align-items:center; white-space:nowrap; }
 
 
     /* ── TOOLTIP OVERLAY & PINNED ── */
@@ -211,8 +214,8 @@
 
     /* ── RESPONSIVE ── */
     @media(max-width:1099px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .mode-num{display:none} .hdr-btn{height:1.9rem;font-size:0.74rem;padding:0 12px;letter-spacing:0.12em} .canvas-wrapper{top:52px} footer{font-size:0.65rem} #tooltip{width:300px} .tt-title{font-size:1.95rem} .tt-subtitle{font-size:0.70rem} .film-year{font-size:1.43rem} .film-title{font-size:1.24rem} .film-genre-tag{font-size:0.65rem} .film-dir{font-size:0.70rem} .film-synopsis{font-size:1.07rem} .film-actors-line{font-size:0.68rem} .actor-name{font-size:1.24rem} .actor-years{font-size:1.11rem} .actor-bio{font-size:1.07rem} .actor-films-line{font-size:0.68rem} .panel-title{font-size:0.75rem} .legend-text{font-size:0.99rem} .legend-count{font-size:0.81rem} .cc-name{font-size:1.17rem} .cc-meta{font-size:0.70rem} .modal-title{font-size:2rem} .modal-subtitle{font-size:0.75rem} .modal-close{font-size:0.845rem} .app-desc-text{font-size:1.3rem} .guide-label{font-size:1.17rem} .guide-desc{font-size:1.17rem}.sources-cat-title{font-size:0.75rem} .source-name{font-size:1.17rem} .source-url{font-size:0.73rem} .source-desc{font-size:1.105rem} }
-    @media(max-width:767px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .left-panel{top:62px;bottom:38px;width:268px} footer{height:28px;font-size:0.66rem;padding:0 12px} .canvas-wrapper{top:52px;bottom:46px} #tooltip{width:min(300px,90vw)} }
-    @media(max-width:479px) { header{height:46px;padding:6px 8px;align-items:center} .logo h1{font-size:1.35rem} .mode-num{display:none} .left-panel{width:min(290px,90vw);top:56px;bottom:38px} .hdr-btn{height:1.35rem;padding:0 8px;font-size:0.70rem;letter-spacing:0.08em} footer{height:28px;padding:0 10px} .canvas-wrapper{top:46px;bottom:46px} #tooltip{width:min(290px,92vw)} }
+    @media(max-width:767px) { header{height:52px;padding:8px 10px;align-items:center} .logo h1{font-size:1.9rem} .left-panel{top:62px;bottom:38px;width:268px} footer{height:28px;font-size:0.66rem;padding:0 12px;justify-content:center} .footer-status{display:none} .canvas-wrapper{top:52px;bottom:46px} #tooltip{width:min(300px,90vw)} }
+    @media(max-width:479px) { header{height:46px;padding:6px 8px;align-items:center} .logo h1{font-size:1.35rem} .mode-num{display:none} .left-panel{width:min(290px,90vw);top:56px;bottom:38px} .hdr-btn{height:1.35rem;padding:0 8px;font-size:0.70rem;letter-spacing:0.08em} footer{height:28px;padding:0 10px;justify-content:center} .footer-status{display:none} .canvas-wrapper{top:46px;bottom:46px} #tooltip{width:min(290px,92vw)} }
 
     /* ── SCROLLBAR ── */
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:var(--surface)} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px} ::-webkit-scrollbar-thumb:hover{background:rgba(255,215,0,0.35)}
@@ -418,6 +421,9 @@
 
 <!-- ── FOOTER ── -->
 <footer>
+  <div id="footer-sync" class="footer-status">
+    <span class="status-dot"></span><span id="footer-sync-text">SINCRONIZZAZIONE…</span>
+  </div>
   <div id="last-update">DATI TMDB · LUMIÈRE v2.9 · © <span id="footer-year">2026</span> Christian Steiner</div>
 </footer>
 
@@ -575,6 +581,21 @@ function cacheSet(key, data) {
 }
 function cacheClear() {
   Object.keys(localStorage).filter(k=>k.startsWith('lum_')).forEach(k=>localStorage.removeItem(k));
+}
+
+// Aggiorna il footer con data/ora dell'ultimo sync e del prossimo (da ts in localStorage)
+function _updateFooterSync(){
+  try {
+    const raw = localStorage.getItem(`lum_stats_v${STATS_VER}`);
+    const el  = document.getElementById('footer-sync-text');
+    if(!el) return;
+    if(!raw){ el.textContent='DATABASE ATTIVO'; return; }
+    const { ts } = JSON.parse(raw);
+    const last = new Date(ts);
+    const next = new Date(ts + CACHE_TTL_STATS);
+    const fmt  = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    el.textContent = `AGG: ${fmt(last)} · PROS: ${fmt(next)}`;
+  } catch {}
 }
 
 // ── Loading facts ────────────────────────────────────────
@@ -2037,6 +2058,7 @@ async function initStats(forceRefresh = false) {
       COUNTRY_STATS = cached;
       saveBaseStats();
       _applyStats();
+      _updateFooterSync();
       return;
     }
   }
@@ -2072,6 +2094,7 @@ async function initStats(forceRefresh = false) {
     }
   } finally {
     showSpinner(false);
+    _updateFooterSync();
   }
 }
 
