@@ -425,7 +425,7 @@
   <div id="footer-sync" class="footer-status">
     <span class="status-dot"></span><span id="footer-sync-text">SINCRONIZZAZIONE…</span>
   </div>
-  <div id="last-update">DATI TMDB · LUMIÈRE v3.0 · © <span id="footer-year">2026</span> Christian Steiner</div>
+  <div id="last-update">DATI TMDB · LUMIÈRE v3.1 · © <span id="footer-year">2026</span> Christian Steiner</div>
 </footer>
 
 <div id="zoom-hint">SCORRI O PIZZICA PER NAVIGARE · DOPPIO CLICK PER RESET</div>
@@ -481,7 +481,7 @@ const COUNTRIES = {
   'DK': { name:'Danimarca',        flag:'🇩🇰', continent:'europe',   lon:10,   lat:56,   rgb:'0,229,255' },
   'FI': { name:'Finlandia',        flag:'🇫🇮', continent:'europe',   lon:26,   lat:65,   rgb:'0,229,255' },
   'PL': { name:'Polonia',          flag:'🇵🇱', continent:'europe',   lon:20,   lat:52,   rgb:'0,229,255' },
-  'CZ': { name:'Rep. Ceca',        flag:'🇨🇿', continent:'europe',   lon:15,   lat:50,   rgb:'0,229,255' },
+  'CZ': { name:'Repubblica Ceca',  flag:'🇨🇿', continent:'europe',   lon:15,   lat:50,   rgb:'0,229,255' },
   'SK': { name:'Slovacchia',       flag:'🇸🇰', continent:'europe',   lon:19,   lat:49,   rgb:'0,229,255' },
   'HU': { name:'Ungheria',         flag:'🇭🇺', continent:'europe',   lon:19,   lat:47,   rgb:'0,229,255' },
   'RO': { name:'Romania',          flag:'🇷🇴', continent:'europe',   lon:25,   lat:45,   rgb:'0,229,255' },
@@ -2699,9 +2699,15 @@ function drawTile(code){
     const hasLS=_hasLetterSpacing;
     const approxW=str=>ctx.measureText(str).width+(hasLS?0:str.length*letterSp);
 
-    // For very narrow tiles use the ISO code (2 chars always fit);
-    // otherwise each word goes on its own line (no truncation).
-    const lines=w<20?[code]:c.name.toUpperCase().split(' ');
+    // Tile label: try the full name on one line first.
+    // Fall back to per-word stacking only when the full name overflows maxLineW.
+    // Very narrow tiles (<20 px) always show just the ISO code.
+    const fullName=c.name.toUpperCase();
+    const lines=w<20
+      ? [code]
+      : (fullName.split(' ').length<=1 || approxW(fullName)<=maxLineW)
+        ? [fullName]
+        : fullName.split(' ');
 
     // Auto-fit: if the longest word overflows maxLineW, scale nSz down proportionally.
     // Single step — no loop — keeps draw calls fast.
